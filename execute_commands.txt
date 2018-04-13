@@ -1,0 +1,8 @@
+# To run example
+
+$SPARK_HOME/bin/spark-submit \
+--class "JavaWordCount" \
+--master yarn \
+--deploy-mode cluster \
+target/simple-project-1.0.jar \
+/cs455/books
