@@ -6,3 +6,9 @@ $SPARK_HOME/bin/spark-submit \
 --deploy-mode cluster \
 target/simple-project-1.0.jar \
 /cs455/books
+
+$SPARK_HOME/bin/spark-submit \
+--class "HW4" \
+--master yarn \
+--deploy-mode cluster \
+target/hw4-project-1.0.jar
