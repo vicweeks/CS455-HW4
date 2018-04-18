@@ -1,6 +1,6 @@
 /*
  * CS455: HW4 Term Project
- * Authors: Victor Weeks & Diego Batres
+ * Authors: Victor Weeks, Diego Batres, Josiah May
  */
 
 import org.apache.spark.sql.SparkSession;
