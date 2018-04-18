@@ -3,14 +3,21 @@
  * Authors: Victor Weeks & Diego Batres
  */
 
-package src.main.java;
+//package src.main.java;
 
-import scala.Tuple2;
+//import scala.Tuple2;
 
-import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.api.java.JavaRDD;
+//import org.apache.spark.api.java.JavaPairRDD;
+//import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.sql.SparkSession;
-import org.apache.spark.sql.SchemaRDD; // used by Spark ML
+
+import org.apache.spark.ml.linalg.Vectors;
+import org.apache.spark.ml.linalg.VectorUDT;
+import org.apache.spark.ml.stat.Correlation;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.RowFactory;
+import org.apache.spark.sql.types.*;
 
 import java.util.Arrays;
 import java.util.List;
@@ -19,29 +26,42 @@ import java.util.regex.Pattern;
 // TODO
 
 public final class HW4 {
-  private static final Pattern SPACE = Pattern.compile(" ");
+    private static final Pattern TAB = Pattern.compile("\t");
 
-  public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws Exception {
+
+	String dataLoc;
       
-    if (args.length < 1) {
-      System.err.println("Usage: HW4 <file>");
-      System.exit(1);
+	if (args.length < 1) {
+	    dataLoc = "/HW4/sample_data";
+	} else {
+	    dataLoc = args[0];
+	}
+      
+	SparkSession spark = SparkSession
+	    .builder()
+	    .appName("HW4")
+	    .getOrCreate();
+
+	Dataset<Row> df = spark.read().format("csv")
+	    .option("sep", "\t")
+	    .option("inferSchema", "true")
+	    .option("header", "true")
+	    .load(dataLoc);
+
+        df.select("title", "artist_name").write().format("json").save("/HW4/Example/test");
+	
+	/*    
+	JavaRDD<String> lines = spark.read().textFile(dataLoc).javaRDD();
+	JavaRDD<String> words = lines.flatMap(s -> Arrays.asList(TAB.split(s)).iterator());
+
+	JavaPairRDD<String, Integer> ones = words.mapToPair(s -> new Tuple2<>(s, 1));
+
+	JavaPairRDD<String, Integer> counts = ones.reduceByKey((i1, i2) -> i1 + i2);
+
+	counts.coalesce(1).saveAsTextFile("/HW4/Example/WordCountOutput");
+	*/
+
+	spark.stop();
     }
-      
-    SparkSession spark = SparkSession
-      .builder()
-      .appName("HW4")
-      .getOrCreate();
-
-    JavaRDD<String> lines = spark.read().textFile(args[0]).javaRDD();
-    JavaRDD<String> words = lines.flatMap(s -> Arrays.asList(SPACE.split(s)).iterator());
-
-    JavaPairRDD<String, Integer> ones = words.mapToPair(s -> new Tuple2<>(s, 1));
-
-    JavaPairRDD<String, Integer> counts = ones.reduceByKey((i1, i2) -> i1 + i2);
-
-    counts.coalesce(1).saveAsTextFile("/HW4/Example/WordCountOutput");
-    
-    spark.stop();
-  }
 }
