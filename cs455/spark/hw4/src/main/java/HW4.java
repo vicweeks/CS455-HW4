@@ -1,15 +1,11 @@
 /*
  * CS455: HW4 Term Project
- * Authors: Victor Weeks & Diego Batres
+ * Authors: Victor Weeks, Diego Batres, Josiah May
  */
 
-//package src.main.java;
-
-//import scala.Tuple2;
-
-//import org.apache.spark.api.java.JavaPairRDD;
-//import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.sql.SparkSession;
+
+import org.apache.spark.ml.feature.RegexTokenizer;
 
 import org.apache.spark.ml.linalg.Vectors;
 import org.apache.spark.ml.linalg.VectorUDT;
@@ -43,25 +39,29 @@ public final class HW4 {
 	    .appName("HW4")
 	    .getOrCreate();
 
-	Dataset<Row> df = spark.read().format("csv")
+	Dataset<Row> data = spark.read().format("csv")
 	    .option("sep", "\t")
 	    .option("inferSchema", "true")
 	    .option("header", "true")
 	    .load(dataLoc);
 
-        df.select("title", "artist_name").write().format("json").save("/HW4/Example/test");
+	Dataset<Row> terms = data.select("artist_terms");
+
+	RegexTokenizer regexTokenizer = new RegexTokenizer()
+	    .setInputCol("artist_terms")
+	    .setOutputCol("terms")
+	    .setPattern("([\\w'-]+\\s?)+").setGaps(false);
+
+	Dataset<Row> tokenized = regexTokenizer.transform(terms);
+
+	tokenized.select("artist_terms","terms").write().format("json").save("/home/HW4/Example/terms_test");
+	tokenized.printSchema();
+	//key.printSchema();
 	
-	/*    
-	JavaRDD<String> lines = spark.read().textFile(dataLoc).javaRDD();
-	JavaRDD<String> words = lines.flatMap(s -> Arrays.asList(TAB.split(s)).iterator());
-
-	JavaPairRDD<String, Integer> ones = words.mapToPair(s -> new Tuple2<>(s, 1));
-
-	JavaPairRDD<String, Integer> counts = ones.reduceByKey((i1, i2) -> i1 + i2);
-
-	counts.coalesce(1).saveAsTextFile("/HW4/Example/WordCountOutput");
-	*/
-
+	//data.printSchema();
+	
+        //data.select("title", "artist_name").write().format("json").save("/HW4/Example/test");
+	
 	spark.stop();
     }
 }
