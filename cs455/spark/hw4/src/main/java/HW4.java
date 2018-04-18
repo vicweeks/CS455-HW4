@@ -5,6 +5,8 @@
 
 import org.apache.spark.sql.SparkSession;
 
+import org.apache.spark.ml.feature.RegexTokenizer;
+
 import org.apache.spark.ml.linalg.Vectors;
 import org.apache.spark.ml.linalg.VectorUDT;
 import org.apache.spark.ml.stat.Correlation;
@@ -36,14 +38,27 @@ public final class HW4 {
 	    .builder()
 	    .appName("HW4")
 	    .getOrCreate();
-	
+
 	Dataset<Row> data = spark.read().format("csv")
 	    .option("sep", "\t")
 	    .option("inferSchema", "true")
 	    .option("header", "true")
 	    .load(dataLoc);
 
-	data.printSchema();
+	Dataset<Row> terms = data.select("artist_terms");
+
+	RegexTokenizer regexTokenizer = new RegexTokenizer()
+	    .setInputCol("artist_terms")
+	    .setOutputCol("terms")
+	    .setPattern(",");
+
+	Dataset<Row> tokenized = regexTokenizer.transform(terms);
+
+	tokenized.select("artist_terms","terms").write().format("json").save("/HW4/Example/terms_test");
+	tokenized.printSchema();
+	//key.printSchema();
+	
+	//data.printSchema();
 	
         //data.select("title", "artist_name").write().format("json").save("/HW4/Example/test");
 	
