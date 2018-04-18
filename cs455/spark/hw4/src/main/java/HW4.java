@@ -3,12 +3,6 @@
  * Authors: Victor Weeks & Diego Batres
  */
 
-//package src.main.java;
-
-//import scala.Tuple2;
-
-//import org.apache.spark.api.java.JavaPairRDD;
-//import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.sql.SparkSession;
 
 import org.apache.spark.ml.linalg.Vectors;
@@ -42,26 +36,17 @@ public final class HW4 {
 	    .builder()
 	    .appName("HW4")
 	    .getOrCreate();
-
-	Dataset<Row> df = spark.read().format("csv")
+	
+	Dataset<Row> data = spark.read().format("csv")
 	    .option("sep", "\t")
 	    .option("inferSchema", "true")
 	    .option("header", "true")
 	    .load(dataLoc);
 
-        df.select("title", "artist_name").write().format("json").save("/HW4/Example/test");
+	data.printSchema();
 	
-	/*    
-	JavaRDD<String> lines = spark.read().textFile(dataLoc).javaRDD();
-	JavaRDD<String> words = lines.flatMap(s -> Arrays.asList(TAB.split(s)).iterator());
-
-	JavaPairRDD<String, Integer> ones = words.mapToPair(s -> new Tuple2<>(s, 1));
-
-	JavaPairRDD<String, Integer> counts = ones.reduceByKey((i1, i2) -> i1 + i2);
-
-	counts.coalesce(1).saveAsTextFile("/HW4/Example/WordCountOutput");
-	*/
-
+        //data.select("title", "artist_name").write().format("json").save("/HW4/Example/test");
+	
 	spark.stop();
     }
 }
