@@ -50,11 +50,11 @@ public final class HW4 {
 	RegexTokenizer regexTokenizer = new RegexTokenizer()
 	    .setInputCol("artist_terms")
 	    .setOutputCol("terms")
-	    .setPattern(",");
+	    .setPattern("([\\w'-]+\\s?)+").setGaps(false);
 
 	Dataset<Row> tokenized = regexTokenizer.transform(terms);
 
-	tokenized.select("artist_terms","terms").write().format("json").save("/HW4/Example/terms_test");
+	tokenized.select("artist_terms","terms").write().format("json").save("/home/HW4/Example/terms_test");
 	tokenized.printSchema();
 	//key.printSchema();
 	
