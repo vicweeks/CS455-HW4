@@ -18,7 +18,11 @@ import org.apache.spark.sql.types.*;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
-
+import static org.apache.spark.sql.functions.split;
+import static org.apache.spark.sql.functions.regexp_replace;
+import static org.apache.spark.sql.functions.trim;
+import org.apache.spark.sql.types.ArrayType;
+import org.apache.spark.sql.types.StringType;
 // TODO
 
 public final class HW4 {
@@ -45,22 +49,14 @@ public final class HW4 {
 	    .option("header", "true")
 	    .load(dataLoc);
 
-	Dataset<Row> terms = data.select("artist_terms");
+	Dataset<Row> splitTerms = data.withColumn("artist_terms",split(
+      regexp_replace(data.col("artist_terms"), "[\\\\\"\\[\\]]+", ""), ", ").cast(DataTypes.createArrayType(DataTypes.StringType)));
+	splitTerms.printSchema();
 
-	RegexTokenizer regexTokenizer = new RegexTokenizer()
-	    .setInputCol("artist_terms")
-	    .setOutputCol("terms")
-	    .setPattern("([\\w'-]+\\s?)+").setGaps(false);
 
-	Dataset<Row> tokenized = regexTokenizer.transform(terms);
 
-	tokenized.select("artist_terms","terms").write().format("json").save("/home/HW4/Example/terms_test");
-	tokenized.printSchema();
-	//key.printSchema();
-	
-	//data.printSchema();
-	
-        //data.select("title", "artist_name").write().format("json").save("/HW4/Example/test");
+  splitTerms.select("artist_terms").write().format("json").save("/home/HW4/Example/terms_test");
+
 	
 	spark.stop();
     }
