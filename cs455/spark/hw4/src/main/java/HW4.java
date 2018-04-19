@@ -5,19 +5,13 @@
 
 import org.apache.spark.sql.SparkSession;
 
-import org.apache.spark.ml.feature.RegexTokenizer;
-
-import org.apache.spark.ml.linalg.Vectors;
-import org.apache.spark.ml.linalg.VectorUDT;
-import org.apache.spark.ml.stat.Correlation;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
-import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.types.*;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.regex.Pattern;
+import static org.apache.spark.sql.functions.split;
+import static org.apache.spark.sql.functions.regexp_replace;
 
 // TODO
 
@@ -45,23 +39,28 @@ public final class HW4 {
 	    .option("header", "true")
 	    .load(dataLoc);
 
-	Dataset<Row> terms = data.select("artist_terms");
+	Dataset<Row> splitTerms = getSplitTerms(data, "artist_terms", DataTypes.StringType );
 
-	RegexTokenizer regexTokenizer = new RegexTokenizer()
-	    .setInputCol("artist_terms")
-	    .setOutputCol("terms")
-	    .setPattern("([\\w&'-]+\\s?)+").setGaps(false);
+	Dataset<Row> splitTerms2 = getSplitTerms(splitTerms, "artist_terms_freq", DataTypes.DoubleType );
 
-	Dataset<Row> tokenized = regexTokenizer.transform(terms);
+	splitTerms2.printSchema();
 
-	tokenized.select("artist_terms","terms").write().format("json").save("/home/HW4/Example/terms_test");
-	tokenized.printSchema();
-	//key.printSchema();
-	
-	//data.printSchema();
-	
-        //data.select("title", "artist_name").write().format("json").save("/HW4/Example/test");
+	splitTerms2.select("artist_terms", "artist_terms_freq").write().format("json").save("/home/HW4/Example/terms_test");
+
 	
 	spark.stop();
     }
+
+	/**
+	 * Splits a string into an array and removes all chars that were part of the array setup ( " \ [ ] )
+	 * It changes the array type to the values given
+	 * @param data Dataset to read
+	 * @param columnName column to change
+	 * @param dataType the type of the array
+	 * @return The new dataset with the changed info
+	 */
+	private static Dataset<Row> getSplitTerms(Dataset<Row> data, String columnName, DataType dataType) {
+		return data.withColumn(columnName ,split(
+        regexp_replace(data.col(columnName), "[\\\\\"\\[\\]]+", ""), ", ").cast(DataTypes.createArrayType( dataType)));
+	}
 }
