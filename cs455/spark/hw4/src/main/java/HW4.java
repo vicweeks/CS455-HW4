@@ -50,7 +50,7 @@ public final class HW4 {
 	RegexTokenizer regexTokenizer = new RegexTokenizer()
 	    .setInputCol("artist_terms")
 	    .setOutputCol("terms")
-	    .setPattern("([\\w'-]+\\s?)+").setGaps(false);
+	    .setPattern("([\\w&'-]+\\s?)+").setGaps(false);
 
 	Dataset<Row> tokenized = regexTokenizer.transform(terms);
 
