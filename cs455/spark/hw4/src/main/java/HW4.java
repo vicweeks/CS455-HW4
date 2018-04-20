@@ -18,6 +18,13 @@ import static org.apache.spark.sql.functions.substring_index;
 
 // TODO
 
+import org.apache.spark.ml.feature.Word2Vec;
+import org.apache.spark.ml.feature.Word2VecModel;
+import org.apache.spark.ml.linalg.Vector;
+import java.util.Arrays;
+import java.util.List;
+import org.apache.spark.mllib.util.MLUtils;
+
 public final class HW4 {
     private static final Pattern TAB = Pattern.compile("\t");
 
@@ -42,16 +49,29 @@ public final class HW4 {
 	    .option("header", "true")
 	    .load(dataLoc);
 
-
-
+	data.printSchema();
+       
 	Dataset<Row> splitTerms = getFirstTerms(data, "artist_terms", DataTypes.StringType );
 
 	Dataset<Row> splitTerms2 = getSplitTerms(splitTerms, "artist_terms_freq", DataTypes.DoubleType );
 
+	Dataset<Row> termsGroup = splitTerms.groupBy("artist_terms").avg("tempo");
+
+	termsGroup.show();
+	/*
+	Word2Vec word2Vec = new Word2Vec()
+	    .setInputCol("artist_terms")
+	    .setOutputCol("terms_vec");
+	    
+	Word2VecModel model = word2Vec.fit(splitTerms);
+	Dataset<Row> result = model.transform(splitTerms);
+	*/
+	//result.printSchema();
+	//result.select("terms_vec").write().format("json").save("/HW4_output/");
 	//splitTerms2.printSchema(); // show how data is saved
 
   splitTerms2.select("artist_terms", "artist_terms_freq").show(5); // print out the term being tested
-
+	
 	//splitTerms2.select("artist_terms", "artist_terms_freq").write().format("json").save("/home/HW4/Example/terms_test"); // write to json
 
   // Test machine learning models
