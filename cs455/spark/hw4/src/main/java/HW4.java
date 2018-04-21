@@ -21,10 +21,15 @@ import static org.apache.spark.sql.functions.substring_index;
 import org.apache.spark.ml.feature.Word2Vec;
 import org.apache.spark.ml.feature.Word2VecModel;
 import org.apache.spark.ml.linalg.Vector;
+import org.apache.spark.ml.linalg.Vectors;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.spark.mllib.util.MLUtils;
 import org.apache.spark.api.java.JavaRDD;
+
+import org.apache.spark.ml.clustering.KMeans;
+import org.apache.spark.ml.clustering.KMeansModel;
+//import org.apache.spark.ml.evaluation.ClusteringEvaluator;
 
 public final class HW4 {
     private static final Pattern TAB = Pattern.compile("\t");
@@ -53,25 +58,28 @@ public final class HW4 {
 	Dataset<Row> condData = data.select("artist_familiarity", "artist_hotttnesss", "artist_name",
 					    "artist_terms", "segments_timbre", "year");
 
-	condData.printSchema();
-	
-	JavaRDD<Row> condDataRDD = condData.javaRDD();
-	
-	StructType schema = new StructType(new StructField[]{
-		new StructField("artist_familiarity", DataTypes.DoubleType, true, Metadata.empty()),
-		new StructField("artist_hotttnesss", DataTypes.DoubleType, true, Metadata.empty()),
-		new StructField("artist_name", DataTypes.StringType, true, Metadata.empty()),
-		new StructField("artist_terms", DataTypes.StringType, true, Metadata.empty()),
-		new StructField("segments_timbre", DataTypes.StringType, true, Metadata.empty()),
-		new StructField("year", DataTypes.IntegerType, true, Metadata.empty())
-	    });
+        Dataset<Row> doubleData = condData.select("artist_familiarity","artist_hotttnesss");
 
-	Dataset<Row> screenedData1 = spark.createDataFrame(condDataRDD, schema);
-	Dataset<Row> screenedData2 = getSplitTerms(screenedData1, "artist_terms", DataTypes.StringType);
- 	Dataset<Row> screenedData = getSplitTerms(screenedData2, "segments_timbre", DataTypes.DoubleType);       
+        KMeans kmeans = new KMeans().setK(2).setSeed(1L);
+	KMeansModel model = kmeans.fit(doubleData);
+
+	Dataset<Row> predictions = model.transform(doubleData);
+	predictions.printSchema();
+	//predictions.show();
 	
+	/*
+	ClusteringEvaluator evaluator = new ClusteringEvaluator();
+	double silhouette = evaluator.evaluate(predictions);
+	System.out.println("Silhouette with squared euclidean distance = " + silhouette);
+
+	Vector[] centers = model.clusterCenters();
+	System.out.println("Cluster Centers: ");
+	for (Vector center: centers) {
+	    System.out.println(center);
+	}
+	*/
 	//screenedData.printSchema();
-	screenedData.select("segments_timbre").show();
+	//screenedData.select("segments_timbre").show();
 	//screenedData.select("segments_timbre").write().format("json").save("/HW4_output/condTest");
 	
 	//Dataset<Row> splitTerms = getFirstTerms(data, "artist_terms", DataTypes.StringType );
