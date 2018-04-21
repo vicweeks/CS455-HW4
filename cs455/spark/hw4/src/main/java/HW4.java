@@ -93,20 +93,21 @@ public final class HW4 {
 	    .appName("HW4")
 	    .getOrCreate();
 
-	/*
+	
 	Dataset dataFull = spark.read().format("csv")
 	    .option("sep", "\t")
 	    .option("inferSchema", "true")
 	    .option("header", "true")
 	    .load(dataLoc);
-	    .as(Encoders.bean(Song.class));
-
 		
 	Dataset data = dataFull.select("year", "artist_familiarity", "artist_hotttnesss", "danceability");
 
-	data.write().parquet("/HW4_output/data/parquet");
-	*/
+	data.write().parquet("/HW4_output/data/parquet/songData.parquet");
+	
 
+
+	// after conversion
+	/*
 	Dataset data = spark.read().format("parquet").load("/HW4_output/data/parquet/").as(Encoders.bean(Song.class));
 	
 	StructType libsvmSchema = new StructType().add("label", "double").add("features", new VectorUDT());  
@@ -130,20 +131,16 @@ public final class HW4 {
 	// Make predictions
 	Dataset<Row> predictions = model.transform(dsLibsvm);
 
-	double cost = model.computeCost(dsLibsvm);
-	System.out.println("Cost: " + cost);
-
 	// Evaluate clustering by computing Within Set Sum of Squared Errors
 	double WSSSE = model.computeCost(dsLibsvm);
 	System.out.println("Within Set Sum of Squared Errors = " + WSSSE);
-	
+	*/
 	/*
 	// Evaluate clustering by computing Silhouette score
 	ClusteringEvaluator evaluator = new ClusteringEvaluator();
 	
 	double silhouette = evaluator.evaluate(predictions);
 	System.out.println("Silhouette with squared euclidean distance = " + silhouette);
-	*/
 	
 	// Shows the result.
 	Vector[] centers = model.clusterCenters();
@@ -151,6 +148,7 @@ public final class HW4 {
 	for (Vector center: centers) {
 	    System.out.println(center);
 	}
+	*/
 	
 	spark.stop();
   }
