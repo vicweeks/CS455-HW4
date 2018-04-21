@@ -3,8 +3,6 @@
  * Authors: Victor Weeks, Diego Batres, Josiah May
  */
 
-import org.apache.spark.ml.fpm.FPGrowth;
-import org.apache.spark.ml.fpm.FPGrowthModel;
 import org.apache.spark.sql.SparkSession;
 
 import org.apache.spark.sql.Dataset;
@@ -18,20 +16,66 @@ import static org.apache.spark.sql.functions.substring_index;
 
 // TODO
 
-import org.apache.spark.ml.feature.Word2Vec;
-import org.apache.spark.ml.feature.Word2VecModel;
 import org.apache.spark.ml.linalg.Vector;
 import org.apache.spark.ml.linalg.Vectors;
-import java.util.Arrays;
-import java.util.List;
+import org.apache.spark.ml.linalg.VectorUDT;
 import org.apache.spark.mllib.util.MLUtils;
 import org.apache.spark.api.java.JavaRDD;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.io.Serializable;
+
+import org.apache.spark.api.java.function.Function;
+import org.apache.spark.sql.Encoder;
+import org.apache.spark.sql.Encoders;
+import org.apache.spark.sql.RowFactory;
 
 import org.apache.spark.ml.clustering.KMeans;
 import org.apache.spark.ml.clustering.KMeansModel;
 //import org.apache.spark.ml.evaluation.ClusteringEvaluator;
 
 public final class HW4 {
+
+    public static class Song implements Serializable {
+	private int year;
+	private double artist_familiarity;
+	private double artist_hotttnesss;
+	private double danceability;
+
+	public int getYear() {
+	    return year;
+	}
+
+	public void setYear(int year) {
+	    this.year = year;
+	}
+
+	public double getArtist_Familiarity() {
+	    return artist_familiarity;
+	}
+
+	public void setArtist_Familiarity(double artist_familiarity) {
+	    this.artist_familiarity = artist_familiarity;
+	}
+	
+	public double getArtist_Hotttnesss() {
+	    return artist_hotttnesss;
+	}
+
+	public void setArtist_Hotttnesss(double artist_hotttnesss) {
+	    this.artist_hotttnesss = artist_hotttnesss;
+	}
+
+	public double getDanceability() {
+	    return danceability;
+	}
+
+	public void setDanceability(double danceability) {
+	    this.danceability = danceability;
+	}
+    }
+    
     private static final Pattern TAB = Pattern.compile("\t");
 
     public static void main(String[] args) throws Exception {
@@ -49,78 +93,36 @@ public final class HW4 {
 	    .appName("HW4")
 	    .getOrCreate();
 
-	Dataset<Row> data = spark.read().format("csv")
+	/*
+	Dataset dataFull = spark.read().format("csv")
 	    .option("sep", "\t")
 	    .option("inferSchema", "true")
 	    .option("header", "true")
 	    .load(dataLoc);
+	    .as(Encoders.bean(Song.class));
 
-	Dataset<Row> condData = data.select("artist_familiarity", "artist_hotttnesss", "artist_name",
-					    "artist_terms", "segments_timbre", "year");
+		
+	Dataset data = dataFull.select("year", "artist_familiarity", "artist_hotttnesss", "danceability");
 
-        Dataset<Row> doubleData = condData.select("artist_familiarity","artist_hotttnesss");
-
-        KMeans kmeans = new KMeans().setK(2).setSeed(1L);
-	KMeansModel model = kmeans.fit(doubleData);
-
-	Dataset<Row> predictions = model.transform(doubleData);
-	predictions.printSchema();
-	//predictions.show();
-	
-	/*
-	ClusteringEvaluator evaluator = new ClusteringEvaluator();
-	double silhouette = evaluator.evaluate(predictions);
-	System.out.println("Silhouette with squared euclidean distance = " + silhouette);
-
-	Vector[] centers = model.clusterCenters();
-	System.out.println("Cluster Centers: ");
-	for (Vector center: centers) {
-	    System.out.println(center);
-	}
+	data.write().parquet("/HW4_output/data/parquet");
 	*/
-	//screenedData.printSchema();
-	//screenedData.select("segments_timbre").show();
-	//screenedData.select("segments_timbre").write().format("json").save("/HW4_output/condTest");
+
+	Dataset data = spark.read().format("parquet").load("/HW4_output/data/parquet/").as(Encoders.bean(Song.class));
 	
-	//Dataset<Row> splitTerms = getFirstTerms(data, "artist_terms", DataTypes.StringType );
+	StructType libsvmSchema = new StructType().add("label", "double").add("features", new VectorUDT());  
 
-	//	Dataset<Row> splitTerms2 = getSplitTerms(splitTerms, "artist_terms_freq", DataTypes.DoubleType );
+	Dataset dsLibsvm = spark.createDataFrame(
+						 data.javaRDD().map(new Function<Song, Row>() {  
+						      public Row call(Song s) {  
+							  Double label = (double) s.getYear();  
+							  Vector currentRow = Vectors.dense(s.getArtist_Familiarity(), s.getArtist_Hotttnesss(), s.getDanceability() );  
+							  return RowFactory.create(label, currentRow);  
+						      }  
+						  }), libsvmSchema);   
 
-	//	Dataset<Row> termsGroup = splitTerms.groupBy("artist_terms").avg("tempo");
-
-	//	termsGroup.show();
-	/*
-	Word2Vec word2Vec = new Word2Vec()
-	    .setInputCol("artist_terms")
-	    .setOutputCol("terms_vec");
-	    
-	Word2VecModel model = word2Vec.fit(splitTerms);
-	Dataset<Row> result = model.transform(splitTerms);
-	*/
-	//result.printSchema();
-	//result.select("terms_vec").write().format("json").save("/HW4_output/");
-	//splitTerms2.printSchema(); // show how data is saved
-
-	//splitTerms2.select("artist_terms", "artist_terms_freq").show(5); // print out the term being tested
+	dsLibsvm.printSchema();
+	dsLibsvm.show();
 	
-	//splitTerms2.select("artist_terms", "artist_terms_freq").write().format("json").save("/home/HW4/Example/terms_test"); // write to json
-
-  // Test machine learning models
-  /*
-  FPGrowthModel model = new FPGrowth()
-      .setItemsCol("artist_terms")
-      .setMinSupport(0.5)
-      .setMinConfidence(0.6)
-      .fit(splitTerms);
-
-
-      // Display frequent itemsets.
-  model.freqItemsets().show();
-      // Display generated association rules.
-  model.associationRules().show();
-  */
-
-
 	spark.stop();
   }
 
