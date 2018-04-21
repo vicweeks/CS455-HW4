@@ -33,7 +33,7 @@ import org.apache.spark.sql.RowFactory;
 
 import org.apache.spark.ml.clustering.KMeans;
 import org.apache.spark.ml.clustering.KMeansModel;
-//import org.apache.spark.ml.evaluation.ClusteringEvaluator;
+import org.apache.spark.ml.evaluation.ClusteringEvaluator;
 
 public final class HW4 {
 
@@ -120,8 +120,37 @@ public final class HW4 {
 						      }  
 						  }), libsvmSchema);   
 
-	dsLibsvm.printSchema();
-	dsLibsvm.show();
+	//dsLibsvm.printSchema();
+	//dsLibsvm.show();
+
+	// Trains a k-means model.
+	KMeans kmeans = new KMeans().setK(2).setSeed(1L);
+	KMeansModel model = kmeans.fit(dsLibsvm);
+	
+	// Make predictions
+	Dataset<Row> predictions = model.transform(dsLibsvm);
+
+	double cost = model.computeCost(dsLibsvm);
+	System.out.println("Cost: " + cost);
+
+	// Evaluate clustering by computing Within Set Sum of Squared Errors
+	double WSSSE = model.computeCost(dsLibsvm);
+	System.out.println("Within Set Sum of Squared Errors = " + WSSSE);
+	
+	/*
+	// Evaluate clustering by computing Silhouette score
+	ClusteringEvaluator evaluator = new ClusteringEvaluator();
+	
+	double silhouette = evaluator.evaluate(predictions);
+	System.out.println("Silhouette with squared euclidean distance = " + silhouette);
+	*/
+	
+	// Shows the result.
+	Vector[] centers = model.clusterCenters();
+	System.out.println("Cluster Centers: ");
+	for (Vector center: centers) {
+	    System.out.println(center);
+	}
 	
 	spark.stop();
   }
