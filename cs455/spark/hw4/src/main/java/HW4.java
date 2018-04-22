@@ -42,7 +42,8 @@ public final class HW4 {
 	private double artist_familiarity;
 	private double artist_hotttnesss;
 	private double danceability;
-
+	private double[] segments_start;
+	
 	public int getYear() {
 	    return year;
 	}
@@ -74,6 +75,15 @@ public final class HW4 {
 	public void setDanceability(double danceability) {
 	    this.danceability = danceability;
 	}
+	
+	public double[] getSegments_Start() {
+	    return segments_start;
+	}
+
+	public void setSegments_Start(double[] segments_start) {
+	    this.segments_start = segments_start;
+	}
+	
     }
     
     private static final Pattern TAB = Pattern.compile("\t");
@@ -93,6 +103,7 @@ public final class HW4 {
 	    .appName("HW4")
 	    .getOrCreate();
 
+	spark.sparkContext().setLogLevel("ERROR");
 	
 	Dataset dataFull = spark.read().format("csv")
 	    .option("sep", "\t")
@@ -100,32 +111,22 @@ public final class HW4 {
 	    .option("header", "true")
 	    .load(dataLoc);
 
-	Dataset data = dataFull.select("year", "artist_familiarity", "artist_hotttnesss", "danceability").as(Encoders.bean(Song.class));
+	//Dataset data = dataFull.select("year", "artist_familiarity", "artist_hotttnesss", "danceability", "segments_start");
 
-	data.printSchema();
-	
-	/*
-	Dataset data = dataFull.select("year", "artist_terms", "segments_timbre");
+	Dataset data = dataFull.select("artist_terms", "danceability", "duration", "end_of_fade_in",
+			 "energy", "key", "loudness", "mode", "start_of_fade_out", "tempo",
+				       "time_signature", "year");
 
-	Dataset<Row> splitTerms = getFirstTerms(data, "artist_terms", DataTypes.StringType);
-
-	Dataset<Row> testData = getFirstTerms(splitTerms, "segments_timbre", DataTypes.DoubleType);
+       	Dataset splitTerms = getFirstTerms(data, "segments_start", DataTypes.DoubleType).as(Encoders.bean(Song.class));
 	
-	testData.write().parquet("/HW4_output/data/parquet/testArray.parquet");
-	
-	/*
-
-	// after conversion
-	
-	Dataset data = spark.read().format("parquet").load("/HW4_output/data/parquet/").as(Encoders.bean(Song.class));
-	*/
 	StructType libsvmSchema = new StructType().add("label", "double").add("features", new VectorUDT());  
 
 	Dataset dsLibsvm = spark.createDataFrame(
-						 data.javaRDD().map(new Function<Song, Row>() {  
-						      public Row call(Song s) {  
-							  Double label = (double) s.getYear();  
-							  Vector currentRow = Vectors.dense(s.getArtist_Familiarity(), s.getArtist_Hotttnesss(), s.getDanceability() );  
+						 splitTerms.javaRDD().map(new Function<Song, Row>() {  
+						      public Row call(Song s) {
+							  double[] features = {s.getArtist_Familiarity(), s.getArtist_Hotttnesss(), s.getDanceability()};
+							  Double label = (double) 0;//s.getYear();  
+							  Vector currentRow = Vectors.dense(s.getSegments_Start());  
 							  return RowFactory.create(label, currentRow);  
 						      }  
 						  }), libsvmSchema);   
