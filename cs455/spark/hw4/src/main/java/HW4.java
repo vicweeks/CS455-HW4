@@ -14,8 +14,6 @@ import static org.apache.spark.sql.functions.split;
 import static org.apache.spark.sql.functions.regexp_replace;
 import static org.apache.spark.sql.functions.substring_index;
 
-// TODO
-
 import org.apache.spark.ml.linalg.Vector;
 import org.apache.spark.ml.linalg.Vectors;
 import org.apache.spark.ml.linalg.VectorUDT;
@@ -36,57 +34,6 @@ import org.apache.spark.ml.clustering.KMeansModel;
 import org.apache.spark.ml.evaluation.ClusteringEvaluator;
 
 public final class HW4 {
-
-    public static class Song implements Serializable {
-	private int year;
-	private double artist_familiarity;
-	private double artist_hotttnesss;
-	private double danceability;
-	private double[] segments_start;
-	
-	public int getYear() {
-	    return year;
-	}
-
-	public void setYear(int year) {
-	    this.year = year;
-	}
-
-	public double getArtist_Familiarity() {
-	    return artist_familiarity;
-	}
-
-	public void setArtist_Familiarity(double artist_familiarity) {
-	    this.artist_familiarity = artist_familiarity;
-	}
-	
-	public double getArtist_Hotttnesss() {
-	    return artist_hotttnesss;
-	}
-
-	public void setArtist_Hotttnesss(double artist_hotttnesss) {
-	    this.artist_hotttnesss = artist_hotttnesss;
-	}
-
-	public double getDanceability() {
-	    return danceability;
-	}
-
-	public void setDanceability(double danceability) {
-	    this.danceability = danceability;
-	}
-	
-	public double[] getSegments_Start() {
-	    return segments_start;
-	}
-
-	public void setSegments_Start(double[] segments_start) {
-	    this.segments_start = segments_start;
-	}
-	
-    }
-    
-    private static final Pattern TAB = Pattern.compile("\t");
 
     public static void main(String[] args) throws Exception {
 
@@ -111,22 +58,24 @@ public final class HW4 {
 	    .option("header", "true")
 	    .load(dataLoc);
 
-	//Dataset data = dataFull.select("year", "artist_familiarity", "artist_hotttnesss", "danceability", "segments_start");
-
-	Dataset data = dataFull.select("artist_terms", "danceability", "duration", "end_of_fade_in",
+	Dataset dataSub = dataFull.select("artist_terms", "danceability", "duration", "end_of_fade_in",
 			 "energy", "key", "loudness", "mode", "start_of_fade_out", "tempo",
 				       "time_signature", "year");
 
-       	Dataset splitTerms = getFirstTerms(data, "segments_start", DataTypes.DoubleType).as(Encoders.bean(Song.class));
+       	Dataset data = getFirstTerms(dataSub, "artist_terms", DataTypes.StringType).as(Encoders.bean(Song.class));
+
+	data.printSchema();
+
 	
-	StructType libsvmSchema = new StructType().add("label", "double").add("features", new VectorUDT());  
+	StructType libsvmSchema = new StructType().add("label", "String").add("features", new VectorUDT());  
 
 	Dataset dsLibsvm = spark.createDataFrame(
-						 splitTerms.javaRDD().map(new Function<Song, Row>() {  
-						      public Row call(Song s) {
-							  double[] features = {s.getArtist_Familiarity(), s.getArtist_Hotttnesss(), s.getDanceability()};
-							  Double label = (double) 0;//s.getYear();  
-							  Vector currentRow = Vectors.dense(s.getSegments_Start());  
+						 data.javaRDD().map(new Function<Song, Row>() {  
+						      public Row call(Song s) {							  
+							  String label = s.getArtist_Terms();
+							  double[] features = {s.getDanceability(), s.getDuration(), s.getEnd_Of_Fade_In(), s.getEnergy(), s.getKey(), s.getLoudness(), s.getMode(),
+									       s.getStart_Of_Fade_Out(), s.getTempo(), s.getTime_Signature(), s.getYear()};
+							  Vector currentRow = Vectors.dense(features);  
 							  return RowFactory.create(label, currentRow);  
 						      }  
 						  }), libsvmSchema);   
@@ -135,7 +84,7 @@ public final class HW4 {
 	//dsLibsvm.show();
 
 	// Trains a k-means model.
-	KMeans kmeans = new KMeans().setK(2).setSeed(1L);
+	KMeans kmeans = new KMeans().setK(10).setSeed(1L);
 	KMeansModel model = kmeans.fit(dsLibsvm);
 	
 	// Make predictions
@@ -144,21 +93,14 @@ public final class HW4 {
 	// Evaluate clustering by computing Within Set Sum of Squared Errors
 	double WSSSE = model.computeCost(dsLibsvm);
 	System.out.println("Within Set Sum of Squared Errors = " + WSSSE);
-	
-	/*
-	// Evaluate clustering by computing Silhouette score
-	ClusteringEvaluator evaluator = new ClusteringEvaluator();
-	
-	double silhouette = evaluator.evaluate(predictions);
-	System.out.println("Silhouette with squared euclidean distance = " + silhouette);
-	
+
 	// Shows the result.
 	Vector[] centers = model.clusterCenters();
 	System.out.println("Cluster Centers: ");
 	for (Vector center: centers) {
 	    System.out.println(center);
 	}
-	*/
+	
 	
 	spark.stop();
   }
