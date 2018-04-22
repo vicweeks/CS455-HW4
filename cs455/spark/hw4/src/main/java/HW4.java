@@ -99,17 +99,26 @@ public final class HW4 {
 	    .option("inferSchema", "true")
 	    .option("header", "true")
 	    .load(dataLoc);
-		
-	Dataset data = dataFull.select("year", "artist_familiarity", "artist_hotttnesss", "danceability");
 
-	data.write().parquet("/HW4_output/data/parquet/songData.parquet");
+	Dataset data = dataFull.select("year", "artist_familiarity", "artist_hotttnesss", "danceability").as(Encoders.bean(Song.class));
+
+	data.printSchema();
 	
+	/*
+	Dataset data = dataFull.select("year", "artist_terms", "segments_timbre");
 
+	Dataset<Row> splitTerms = getFirstTerms(data, "artist_terms", DataTypes.StringType);
+
+	Dataset<Row> testData = getFirstTerms(splitTerms, "segments_timbre", DataTypes.DoubleType);
+	
+	testData.write().parquet("/HW4_output/data/parquet/testArray.parquet");
+	
+	/*
 
 	// after conversion
-	/*
-	Dataset data = spark.read().format("parquet").load("/HW4_output/data/parquet/").as(Encoders.bean(Song.class));
 	
+	Dataset data = spark.read().format("parquet").load("/HW4_output/data/parquet/").as(Encoders.bean(Song.class));
+	*/
 	StructType libsvmSchema = new StructType().add("label", "double").add("features", new VectorUDT());  
 
 	Dataset dsLibsvm = spark.createDataFrame(
@@ -134,7 +143,7 @@ public final class HW4 {
 	// Evaluate clustering by computing Within Set Sum of Squared Errors
 	double WSSSE = model.computeCost(dsLibsvm);
 	System.out.println("Within Set Sum of Squared Errors = " + WSSSE);
-	*/
+	
 	/*
 	// Evaluate clustering by computing Silhouette score
 	ClusteringEvaluator evaluator = new ClusteringEvaluator();
