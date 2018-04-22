@@ -66,22 +66,21 @@ public final class HW4 {
 	    .option("inferSchema", "true")
 	    .option("header", "true")
 	    .load(dataLoc);
+	Dataset dataFixed = getFirstTerms(dataFull, "artist_terms", DataTypes.StringType).as(Encoders.bean(Song.class));
 
-	Dataset data = dataFull.select("artist_terms", "danceability", "duration", "end_of_fade_in",
+	Dataset data = dataFixed.select("artist_terms", "danceability", "duration", "end_of_fade_in",
 			 "energy", "key", "loudness", "mode", "start_of_fade_out", "tempo",
 				       "time_signature", "year").as(Encoders.bean(Song.class));
 
-       	//Dataset data = getFirstTerms(dataSub, "artist_terms", DataTypes.StringType).as(Encoders.bean(Song.class));
-
-	data.printSchema();
+			data.printSchema();
 
 	
-	StructType libsvmSchema = new StructType().add("label", "double").add("features", new VectorUDT());  
+	StructType libsvmSchema = new StructType().add("label", "String").add("features", new VectorUDT());
 
 	Dataset dsLibsvm = spark.createDataFrame(
-						 data.javaRDD().map(new Function<Song, Row>() {  
+			data.javaRDD().map(new Function<Song, Row>() {
 						      public Row call(Song s) {							  
-							  double label = (double) s.getYear();
+							  String label =  s.getArtist_Terms();
 							  double[] features = {s.getDanceability(), s.getDuration(), s.getEnd_Of_Fade_In(), s.getEnergy(), s.getKey(), s.getLoudness(), s.getMode(),
 									       s.getStart_Of_Fade_Out(), s.getTempo(), s.getTime_Signature(), s.getYear()};
 							  Vector currentRow = Vectors.dense(features);  
@@ -133,7 +132,7 @@ public final class HW4 {
 	// Select example rows to display.
 	predictions.select("predictedLabel", "label", "features").show(5);
 
-	predictions.select("predictedLabel", "label", "features").write().format("json").save("/HW4_output/test/classification");
+	predictions.select("predictedLabel", "label", "features").write().format("json").save("/home/HW4_output/test/classification");
 	
 	// Select (prediction, true label) and compute test error.
 	MulticlassClassificationEvaluator evaluator = new MulticlassClassificationEvaluator()
@@ -222,8 +221,8 @@ public final class HW4 {
    * @return The new dataset with the changed info
    */
   private static Dataset<Row> getFirstTerms(Dataset<Row> data, String columnNameOriginal, String columnNameNew, DataType dataType) {
-    return data.withColumn(columnNameOriginal ,split(substring_index(
-        regexp_replace(data.col(columnNameNew), "[\\\\\"\\[\\]]+", ""), ", ", 1), ", " ).cast(DataTypes.createArrayType( dataType)));
+    return data.withColumn(columnNameOriginal ,substring_index(
+        regexp_replace(data.col(columnNameNew), "[\\\\\"\\[\\]]+", ""), ", ", 1).cast( dataType));
   }
 
 }
