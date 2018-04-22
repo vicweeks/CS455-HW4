@@ -33,6 +33,15 @@ import org.apache.spark.ml.clustering.KMeans;
 import org.apache.spark.ml.clustering.KMeansModel;
 import org.apache.spark.ml.evaluation.ClusteringEvaluator;
 
+import org.apache.spark.ml.Pipeline;
+import org.apache.spark.ml.PipelineModel;
+import org.apache.spark.ml.PipelineStage;
+import org.apache.spark.ml.classification.DecisionTreeClassifier;
+import org.apache.spark.ml.classification.DecisionTreeClassificationModel;
+import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator;
+import org.apache.spark.ml.feature.*;
+
+
 public final class HW4 {
 
     public static void main(String[] args) throws Exception {
@@ -58,21 +67,21 @@ public final class HW4 {
 	    .option("header", "true")
 	    .load(dataLoc);
 
-	Dataset dataSub = dataFull.select("artist_terms", "danceability", "duration", "end_of_fade_in",
+	Dataset data = dataFull.select("artist_terms", "danceability", "duration", "end_of_fade_in",
 			 "energy", "key", "loudness", "mode", "start_of_fade_out", "tempo",
-				       "time_signature", "year");
+				       "time_signature", "year").as(Encoders.bean(Song.class));
 
-       	Dataset data = getFirstTerms(dataSub, "artist_terms", DataTypes.StringType).as(Encoders.bean(Song.class));
+       	//Dataset data = getFirstTerms(dataSub, "artist_terms", DataTypes.StringType).as(Encoders.bean(Song.class));
 
 	data.printSchema();
 
 	
-	StructType libsvmSchema = new StructType().add("label", "String").add("features", new VectorUDT());  
+	StructType libsvmSchema = new StructType().add("label", "double").add("features", new VectorUDT());  
 
 	Dataset dsLibsvm = spark.createDataFrame(
 						 data.javaRDD().map(new Function<Song, Row>() {  
 						      public Row call(Song s) {							  
-							  String label = s.getArtist_Terms();
+							  double label = (double) s.getYear();
 							  double[] features = {s.getDanceability(), s.getDuration(), s.getEnd_Of_Fade_In(), s.getEnergy(), s.getKey(), s.getLoudness(), s.getMode(),
 									       s.getStart_Of_Fade_Out(), s.getTempo(), s.getTime_Signature(), s.getYear()};
 							  Vector currentRow = Vectors.dense(features);  
@@ -80,6 +89,65 @@ public final class HW4 {
 						      }  
 						  }), libsvmSchema);   
 
+	
+	// Index labels, adding metadata to the label column.
+	// Fit on whole dataset to include all labels in index.
+	StringIndexerModel labelIndexer = new StringIndexer()
+	    .setInputCol("label")
+	    .setOutputCol("indexedLabel")
+	    .fit(dsLibsvm);
+
+	// Automatically identify categorical features, and index them.
+	VectorIndexerModel featureIndexer = new VectorIndexer()
+	    .setInputCol("features")
+	    .setOutputCol("indexedFeatures")
+	    .setMaxCategories(4) // features with > 4 distinct values are treated as continuous.
+	    .fit(dsLibsvm);
+
+	// Split the data into training and test sets (30% held out for testing).
+	Dataset<Row>[] splits = dsLibsvm.randomSplit(new double[]{0.7, 0.3});
+	Dataset<Row> trainingData = splits[0];
+	Dataset<Row> testData = splits[1];
+
+	// Train a DecisionTree model.
+	DecisionTreeClassifier dt = new DecisionTreeClassifier()
+	    .setLabelCol("indexedLabel")
+	    .setFeaturesCol("indexedFeatures");
+
+	// Convert indexed labels back to original labels.
+	IndexToString labelConverter = new IndexToString()
+	    .setInputCol("prediction")
+	    .setOutputCol("predictedLabel")
+	    .setLabels(labelIndexer.labels());
+
+	// Chain indexers and tree in a Pipeline.
+	Pipeline pipeline = new Pipeline()
+	    .setStages(new PipelineStage[]{labelIndexer, featureIndexer, dt, labelConverter});
+
+	// Train model. This also runs the indexers.
+	PipelineModel model = pipeline.fit(trainingData);
+
+	// Make predictions.
+	Dataset<Row> predictions = model.transform(testData);
+
+	// Select example rows to display.
+	predictions.select("predictedLabel", "label", "features").show(5);
+
+	predictions.select("predictedLabel", "label", "features").write().format("json").save("/HW4_output/test/classification");
+	
+	// Select (prediction, true label) and compute test error.
+	MulticlassClassificationEvaluator evaluator = new MulticlassClassificationEvaluator()
+	    .setLabelCol("indexedLabel")
+	    .setPredictionCol("prediction")
+	    .setMetricName("accuracy");
+	double accuracy = evaluator.evaluate(predictions);
+	System.out.println("Test Error = " + (1.0 - accuracy));
+
+	DecisionTreeClassificationModel treeModel =
+	    (DecisionTreeClassificationModel) (model.stages()[2]);
+	System.out.println("Learned classification tree model:\n" + treeModel.toDebugString());
+	
+	/*
 	//dsLibsvm.printSchema();
 	//dsLibsvm.show();
 
@@ -101,7 +169,7 @@ public final class HW4 {
 	    System.out.println(center);
 	}
 	
-	
+	*/
 	spark.stop();
   }
 
