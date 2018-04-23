@@ -126,7 +126,7 @@ public class Song implements Serializable {
             diff = data[i+1] - data[i];
             total += diff;
         }
-        return total;
+        return total/data.length;
     }
 
 }
