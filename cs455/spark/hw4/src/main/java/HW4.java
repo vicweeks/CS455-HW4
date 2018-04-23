@@ -49,7 +49,7 @@ public final class HW4 {
 	String dataLoc;
       
 	if (args.length < 1) {
-	    dataLoc = "/HW4/sample_data";
+	    dataLoc = "/HW4/MSD_data/9*";
 	} else {
 	    dataLoc = args[0];
 	}
@@ -66,13 +66,14 @@ public final class HW4 {
 	    .option("inferSchema", "true")
 	    .option("header", "true")
 	    .load(dataLoc);
-	Dataset dataFixed = getFirstTerms(dataFull, "artist_terms", DataTypes.StringType).as(Encoders.bean(Song.class));
+	
+	Dataset dataFixed = getFirstTerms(dataFull, "artist_terms", DataTypes.StringType);
 
 	Dataset data = dataFixed.select("artist_terms", "danceability", "duration", "end_of_fade_in",
 			 "energy", "key", "loudness", "mode", "start_of_fade_out", "tempo",
 				       "time_signature", "year").as(Encoders.bean(Song.class));
 
-			data.printSchema();
+	data.printSchema();
 
 	
 	StructType libsvmSchema = new StructType().add("label", "String").add("features", new VectorUDT());
@@ -132,7 +133,7 @@ public final class HW4 {
 	// Select example rows to display.
 	predictions.select("predictedLabel", "label", "features").show(5);
 
-	predictions.select("predictedLabel", "label", "features").write().format("json").save("/home/HW4_output/test/classification");
+	predictions.select("predictedLabel", "label", "features").write().format("json").save("/HW4_output/test/classification");
 	
 	// Select (prediction, true label) and compute test error.
 	MulticlassClassificationEvaluator evaluator = new MulticlassClassificationEvaluator()
