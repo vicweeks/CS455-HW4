@@ -5,6 +5,7 @@
  */
 
 
+import Util.RowParser;
 import java.io.Serializable;
 
 public class Song implements Serializable {
@@ -22,7 +23,12 @@ public class Song implements Serializable {
     public int year;
     public double[] segments_start;
     public double[] segments_timbre;
-    private double[] tatums_start;
+    public double[] tatums_start;
+    public double[] bars_start;
+    public double[] beats_start;
+    public double[] segments_loudness_max;
+    public double[] segments_pitches;
+
     
     public String getArtist_Terms() { return artist_terms; }
     public void setArtist_Terms(String artist_terms) { this.artist_terms = artist_terms; }
@@ -71,4 +77,46 @@ public class Song implements Serializable {
     public void setSegments_timbre(double[] segments_timbre) {
         this.segments_timbre = segments_timbre;
     }
+
+    public double[] getTatums_start() {
+        return tatums_start;
+    }
+
+    public void setTatums_start(double[] tatums_start) {
+        this.tatums_start = tatums_start;
+    }
+
+    public double[] getBars_start() {
+        return bars_start;
+    }
+
+    public void setBars_start(double[] bars_start) {
+        this.bars_start = bars_start;
+    }
+
+    public double[] getBeats_start() {
+        return beats_start;
+    }
+
+    public void setBeats_start(double[] beats_start) {
+        this.beats_start = beats_start;
+    }
+
+    public double[] getSegments_loudness_max() {
+        return segments_loudness_max;
+    }
+
+    public void setSegments_loudness_max(double[] segments_loudness_max) {
+        this.segments_loudness_max = segments_loudness_max;
+    }
+
+    public double[] getSegments_pitches() {
+        return segments_pitches;
+    }
+
+    public void setSegments_pitches(double[] segments_pitches) {
+        this.segments_pitches = segments_pitches;
+    }
+
+
 }

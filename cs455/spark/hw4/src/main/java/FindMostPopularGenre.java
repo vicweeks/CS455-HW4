@@ -2,6 +2,7 @@ import static org.apache.spark.sql.functions.col;
 import static org.apache.spark.sql.functions.explode;
 
 import Util.RowParser;
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.spark.api.java.JavaPairRDD;
@@ -17,7 +18,7 @@ import org.apache.spark.sql.types.DataTypes;
 import scala.Tuple2;
 
 
-public class FindMostPopularGenre {
+public class FindMostPopularGenre implements Serializable {
 
   private final String artistTerms = "artist_terms";
   private final DataType stringType = DataTypes.StringType;
