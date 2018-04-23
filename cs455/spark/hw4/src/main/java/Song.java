@@ -20,6 +20,8 @@ public class Song implements Serializable {
     public double tempo;
     public int time_signature;
     public int year;
+    public double[] segments_start;
+    public double[] segments_timbre;
     
     public String getArtist_Terms() { return artist_terms; }
     public void setArtist_Terms(String artist_terms) { this.artist_terms = artist_terms; }
@@ -55,6 +57,17 @@ public class Song implements Serializable {
     public void setTime_Signature(int time_signature) { this.time_signature = time_signature; }
     
     public int getYear() { return year; }
-    public void setYear(int year) { this.year = year; }    
-    
+    public void setYear(int year) { this.year = year; }
+
+    public double[] getSegments_start() { return segments_start; }
+
+    public void setSegments_start(double[] segments_start) { this.segments_start = segments_start; }
+
+    public double[] getSegments_timbre() {
+        return segments_timbre;
+    }
+
+    public void setSegments_timbre(double[] segments_timbre) {
+        this.segments_timbre = segments_timbre;
+    }
 }

@@ -3,6 +3,8 @@
  * Authors: Victor Weeks, Diego Batres, Josiah May
  */
 
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
 
 import org.apache.spark.sql.Dataset;
@@ -66,15 +68,23 @@ public final class HW4 {
 	    .option("inferSchema", "true")
 	    .option("header", "true")
 	    .load(dataLoc);
-	Dataset dataFixed = getFirstTerms(dataFull, "artist_terms", DataTypes.StringType).as(Encoders.bean(Song.class));
 
-	Dataset data = dataFixed.select("artist_terms", "danceability", "duration", "end_of_fade_in",
+
+	Dataset dataFixed = getFirstTerms(dataFull, "artist_terms", "", DataTypes.StringType);
+  Dataset dataFixed3 = getFirstNterms(dataFixed, "segments_timbre", "segments_timbre", DataTypes.StringType, 100);
+	Dataset dataFixed1 = getSplitTerms(dataFixed3, "segments_timbre", "segments_timbre", DataTypes.DoubleType);
+	Dataset dataFixed2 = getFirstNterms(dataFixed1, "segments_start", "segments_start", DataTypes.StringType, 10);
+  Dataset dataFixed4 = getSplitTerms(dataFixed2, "segments_start", "segments_start", DataTypes.DoubleType);
+
+
+
+	Dataset data = dataFixed4.select("artist_terms", "danceability", "duration", "end_of_fade_in",
 			 "energy", "key", "loudness", "mode", "start_of_fade_out", "tempo",
-				       "time_signature", "year").as(Encoders.bean(Song.class));
+				       "time_signature", "year", "segments_start", "segments_timbre").as(Encoders.bean(Song.class));
 
 			data.printSchema();
 
-	
+	Dataset remove = data.select();
 	StructType libsvmSchema = new StructType().add("label", "String").add("features", new VectorUDT());
 
 	Dataset dsLibsvm = spark.createDataFrame(
@@ -83,7 +93,9 @@ public final class HW4 {
 							  String label =  s.getArtist_Terms();
 							  double[] features = {s.getDanceability(), s.getDuration(), s.getEnd_Of_Fade_In(), s.getEnergy(), s.getKey(), s.getLoudness(), s.getMode(),
 									       s.getStart_Of_Fade_Out(), s.getTempo(), s.getTime_Signature(), s.getYear()};
-							  Vector currentRow = Vectors.dense(features);  
+							  features = combineDoubles(features, s.getSegments_start());
+                    features = combineDoubles(features, s.getSegments_timbre());
+							  Vector currentRow = Vectors.dense(features);
 							  return RowFactory.create(label, currentRow);  
 						      }  
 						  }), libsvmSchema);   
@@ -132,7 +144,7 @@ public final class HW4 {
 	// Select example rows to display.
 	predictions.select("predictedLabel", "label", "features").show(5);
 
-	predictions.select("predictedLabel", "label", "features").write().format("json").save("/home/HW4_output/test/classification");
+	predictions.select("predictedLabel", "label", "features").write().mode(SaveMode.Overwrite).format("json").save("/home/HW4_output/test/classification");
 	
 	// Select (prediction, true label) and compute test error.
 	MulticlassClassificationEvaluator evaluator = new MulticlassClassificationEvaluator()
@@ -145,30 +157,8 @@ public final class HW4 {
 	DecisionTreeClassificationModel treeModel =
 	    (DecisionTreeClassificationModel) (model.stages()[2]);
 	System.out.println("Learned classification tree model:\n" + treeModel.toDebugString());
-	
-	/*
-	//dsLibsvm.printSchema();
-	//dsLibsvm.show();
 
-	// Trains a k-means model.
-	KMeans kmeans = new KMeans().setK(10).setSeed(1L);
-	KMeansModel model = kmeans.fit(dsLibsvm);
-	
-	// Make predictions
-	Dataset<Row> predictions = model.transform(dsLibsvm);
 
-	// Evaluate clustering by computing Within Set Sum of Squared Errors
-	double WSSSE = model.computeCost(dsLibsvm);
-	System.out.println("Within Set Sum of Squared Errors = " + WSSSE);
-
-	// Shows the result.
-	Vector[] centers = model.clusterCenters();
-	System.out.println("Cluster Centers: ");
-	for (Vector center: centers) {
-	    System.out.println(center);
-	}
-	
-	*/
 	spark.stop();
   }
 
@@ -225,4 +215,26 @@ public final class HW4 {
         regexp_replace(data.col(columnNameNew), "[\\\\\"\\[\\]]+", ""), ", ", 1).cast( dataType));
   }
 
+  /**
+   * Gets the first element of a string[] and returns an array of just that element and saves it to a new column
+   * It need to be an array for the Machine learning models
+   * @param data Dataset to read
+   * @param columnNameOriginal column to change
+   * @param columnNameNew the new column named
+   * @param dataType the type of the array
+   * @return The new dataset with the changed info
+   */
+  private static Dataset<Row> getFirstNterms(Dataset<Row> data, String columnNameOriginal, String columnNameNew, DataType dataType, int numberOfItems) {
+    return data.withColumn(columnNameOriginal ,substring_index(
+        regexp_replace(data.col(columnNameNew), "[\\\\\"\\[\\]]+", ""), ", ", numberOfItems).cast( dataType));
+  }
+
+  private static Dataset<Row> removeArrays(Dataset<Row> data, String columnNameOriginal, String columnNameNew, DataType dataType) {
+    return data.withColumn(columnNameOriginal , regexp_replace(data.col(columnNameNew), "[\\\\\"\\[\\]]+", "").cast( dataType));
+  }
+
+  private static double[] combineDoubles(double[] array1, double[] array2){
+
+    return ArrayUtils.addAll(array1, array2);
+  }
 }
