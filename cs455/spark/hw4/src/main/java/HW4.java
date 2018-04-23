@@ -26,6 +26,7 @@ import org.apache.spark.mllib.util.MLUtils;
 import org.apache.spark.api.java.JavaRDD;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Collections;
 import java.io.Serializable;
 
@@ -46,6 +47,8 @@ import org.apache.spark.ml.classification.DecisionTreeClassificationModel;
 import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator;
 import org.apache.spark.ml.feature.*;
 
+import org.apache.spark.ml.fpm.FPGrowth;
+import org.apache.spark.ml.fpm.FPGrowthModel;
 
 public final class HW4 {
 
@@ -54,7 +57,7 @@ public final class HW4 {
 	String dataLoc;
       
 	if (args.length < 1) {
-	    dataLoc = "/HW4/sample_data";
+	    dataLoc = "/HW4/sample_data/";
 	} else {
 	    dataLoc = args[0];
 	}
@@ -65,18 +68,56 @@ public final class HW4 {
 	    .getOrCreate();
 
 	spark.sparkContext().setLogLevel("ERROR");
-	
-	Dataset<Row> dataFull = spark.read().format("csv")
+
+	Dataset dataFull = spark.read().format("csv")
 	    .option("sep", "\t")
 	    .option("inferSchema", "true")
 	    .option("header", "true")
 	    .load(dataLoc);
 
+	Dataset termsData = getFirstNterms(dataFull, "artist_terms",
+					   "artist_terms", DataTypes.StringType, 5);
+
+	Dataset splitTerms = getSplitTerms(dataFull, "artist_terms", DataTypes.StringType);
+
+	//splitTerms.show(5);
+	/*
+	List<Row> data = Arrays.asList(
+				       RowFactory.create(Arrays.asList("1 2 5".split(" "))),
+				       RowFactory.create(Arrays.asList("1 2 3 5".split(" "))),
+				       RowFactory.create(Arrays.asList("1 2".split(" ")))
+				       );
+	StructType schema = new StructType(new StructField[]{ new StructField(
+									      "items", new ArrayType(DataTypes.StringType, true), false, Metadata.empty())
+	    });
+	Dataset<Row> itemsDF = spark.createDataFrame(data, schema);
+
+	itemsDF.show();
+	*/
+	
+	FPGrowthModel model = new FPGrowth()
+	    .setItemsCol("artist_terms")
+	    .setMinSupport(0.2)
+	    .setMinConfidence(0.6)
+	    .fit(splitTerms);
+
+	// Display frequent itemsets.
+	model.freqItemsets().show();
+	model.freqItemsets().orderBy(col("freq").desc()).write().format("json").mode(SaveMode.Overwrite).save("/HW4_output/FPgrowth/freqItems");
+	// Display generated association rules.
+	model.associationRules().show();
+	model.associationRules().orderBy(col("confidence").desc()).write().mode(SaveMode.Overwrite).format("json").save("/HW4_output/FPgrowth/rules");
+	// transform examines the input items against all the association rules and summarize the
+	// consequents as prediction
+	//model.transform(splitTerms).show();
+	
+	/*
+	
 	FindMostPopularGenre test1 = new FindMostPopularGenre(dataFull);
 	FindSectionsInfo test2 = new FindSectionsInfo(dataFull);
 	test2.run();
 	//test1.run();
-
+	*/
 	//Machine learning
   dataFull.select("energy").filter(col("energy").gt(0)).show();
   dataFull.select("key").filter(col("key").gt(0)).show();
