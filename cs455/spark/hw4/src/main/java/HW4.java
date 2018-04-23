@@ -70,7 +70,7 @@ public final class HW4 {
 	    .load(dataLoc);
 
 
-	Dataset dataFixed = getFirstTerms(dataFull, "artist_terms", "", DataTypes.StringType);
+	Dataset dataFixed = getFirstTerms(dataFull, "artist_terms", DataTypes.StringType);
   Dataset dataFixed3 = getFirstNterms(dataFixed, "segments_timbre", "segments_timbre", DataTypes.StringType, 100);
 	Dataset dataFixed1 = getSplitTerms(dataFixed3, "segments_timbre", "segments_timbre", DataTypes.DoubleType);
 	Dataset dataFixed2 = getFirstNterms(dataFixed1, "segments_start", "segments_start", DataTypes.StringType, 10);
