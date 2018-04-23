@@ -49,7 +49,7 @@ public final class HW4 {
 	String dataLoc;
       
 	if (args.length < 1) {
-	    dataLoc = "/HW4/MSD_data/9*";
+	    dataLoc = "/HW4/sample_data";
 	} else {
 	    dataLoc = args[0];
 	}
@@ -73,7 +73,7 @@ public final class HW4 {
 			 "energy", "key", "loudness", "mode", "start_of_fade_out", "tempo",
 				       "time_signature", "year").as(Encoders.bean(Song.class));
 
-	data.printSchema();
+	//data.printSchema();
 
 	
 	StructType libsvmSchema = new StructType().add("label", "String").add("features", new VectorUDT());
@@ -128,24 +128,29 @@ public final class HW4 {
 	PipelineModel model = pipeline.fit(trainingData);
 
 	// Make predictions.
+	Dataset<Row> trainingFit = model.transform(trainingData);
 	Dataset<Row> predictions = model.transform(testData);
 
 	// Select example rows to display.
+	trainingFit.select("predictedLabel", "label", "features").show(5);
 	predictions.select("predictedLabel", "label", "features").show(5);
 
-	predictions.select("predictedLabel", "label", "features").write().format("json").save("/HW4_output/test/classification");
+	//predictions.select("predictedLabel", "label", "features").write().format("json").save("/HW4_output/test/classification");
 	
 	// Select (prediction, true label) and compute test error.
 	MulticlassClassificationEvaluator evaluator = new MulticlassClassificationEvaluator()
 	    .setLabelCol("indexedLabel")
 	    .setPredictionCol("prediction")
 	    .setMetricName("accuracy");
+
+	double trainingAcc = evaluator.evaluate(trainingFit);
 	double accuracy = evaluator.evaluate(predictions);
-	System.out.println("Test Error = " + (1.0 - accuracy));
+	System.out.println("Train Error = " + (1.0 - trainingAcc));
+	System.out.println("Test  Error = " + (1.0 - accuracy));
 
 	DecisionTreeClassificationModel treeModel =
 	    (DecisionTreeClassificationModel) (model.stages()[2]);
-	System.out.println("Learned classification tree model:\n" + treeModel.toDebugString());
+	//System.out.println("Learned classification tree model:\n" + treeModel.toDebugString());
 	
 	/*
 	//dsLibsvm.printSchema();
