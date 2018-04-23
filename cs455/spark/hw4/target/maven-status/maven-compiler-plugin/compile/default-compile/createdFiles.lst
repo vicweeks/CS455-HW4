@@ -1,4 +1,6 @@
 HW4.class
-HW4$1.class
+FindSectionsInfo.class
+FindMostPopularGenre.class
+Util/RowParser.class
 Song.class
 TSVtoParquet.class

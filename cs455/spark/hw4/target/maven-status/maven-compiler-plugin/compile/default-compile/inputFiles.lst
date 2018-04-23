@@ -2,3 +2,6 @@
 /s/bach/k/under/josiahm/CS455/CS455-HW4/cs455/spark/hw4/src/main/java/ReadTCV.java
 /s/bach/k/under/josiahm/CS455/CS455-HW4/cs455/spark/hw4/src/main/java/TSVtoParquet.java
 /s/bach/k/under/josiahm/CS455/CS455-HW4/cs455/spark/hw4/src/main/java/HW4.java
+/s/bach/k/under/josiahm/CS455/CS455-HW4/cs455/spark/hw4/src/main/java/FindSectionsInfo.java
+/s/bach/k/under/josiahm/CS455/CS455-HW4/cs455/spark/hw4/src/main/java/Util/RowParser.java
+/s/bach/k/under/josiahm/CS455/CS455-HW4/cs455/spark/hw4/src/main/java/FindMostPopularGenre.java
