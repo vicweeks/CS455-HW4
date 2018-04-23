@@ -28,7 +28,8 @@ public class FindSectionsInfo {
     allTerms = RowParser.getSplitTerms(allTerms, "tatums_start", DataTypes.DoubleType);
     allTerms = RowParser.getSplitTerms(allTerms, "segments_start", DataTypes.DoubleType);
 
-    allTerms.agg(min(size(col("tatums_start"))), max(col("tatums_start")), min(size(col("segments_start"))), max(col("segments_start"))).show();
+    allTerms.agg(min(size(col("tatums_start"))), max(size(col("tatums_start"))),
+        min(size(col("segments_start"))), max(size(col("segments_start")))).show();
 
   }
 }

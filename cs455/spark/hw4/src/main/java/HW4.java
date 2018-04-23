@@ -78,7 +78,6 @@ public final class HW4 {
 	//test1.run();
 
 	//Machine learning
-  /*
   dataFull.select("energy").filter(col("energy").gt(0)).show();
   dataFull.select("key").filter(col("key").gt(0)).show();
   dataFull.select("loudness").filter(col("loudness").gt(0)).show();
@@ -89,9 +88,9 @@ public final class HW4 {
   Dataset dataFixed7 = getFirstNterms(dataFull, "artist_terms", "artist_terms", DataTypes.StringType, 5);
   Dataset dataFixed6 = getSplitTerms(dataFixed7, "artist_terms", "artist_terms", DataTypes.StringType);
 	Dataset dataFixed5 = dataFixed6.withColumn("artist_terms", explode(col("artist_terms")));
-  Dataset dataFixed4 = getFirstNterms(dataFixed5, "segments_timbre", "segments_timbre", DataTypes.StringType, 500);
+  Dataset dataFixed4 = getFirstNterms(dataFixed5, "segments_timbre", "segments_timbre", DataTypes.StringType, 1872);
 	Dataset dataFixed3 = getSplitTerms(dataFixed4, "segments_timbre", "segments_timbre", DataTypes.DoubleType);
-	Dataset dataFixed2 = getFirstNterms(dataFixed3, "segments_start", "segments_start", DataTypes.StringType, 50);
+	Dataset dataFixed2 = getFirstNterms(dataFixed3, "segments_start", "segments_start", DataTypes.StringType, 312);
   Dataset dataFixed1 = getSplitTerms(dataFixed2, "segments_start", "segments_start", DataTypes.DoubleType);
 
 
@@ -173,7 +172,7 @@ public final class HW4 {
 	DecisionTreeClassificationModel treeModel =
 	    (DecisionTreeClassificationModel) (model.stages()[2]);
 	System.out.println("Learned classification tree model:\n" + treeModel.toDebugString());
-	*/
+
 
 	spark.stop();
   }

@@ -22,6 +22,7 @@ public class Song implements Serializable {
     public int year;
     public double[] segments_start;
     public double[] segments_timbre;
+    private double[] tatums_start;
     
     public String getArtist_Terms() { return artist_terms; }
     public void setArtist_Terms(String artist_terms) { this.artist_terms = artist_terms; }
