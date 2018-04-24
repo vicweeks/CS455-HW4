@@ -83,7 +83,7 @@ public class Song implements Serializable {
     }
 
     public void setSegments_timbre(double[] segments_timbre) {
-        this.segments_timbre = segments_timbre;
+        this.segments_timbre = findTimbreDifference(segments_timbre);
     }
 
     public double getTatums_start() {
@@ -125,7 +125,7 @@ public class Song implements Serializable {
     }
 
     public void setSegments_pitches(double[] segments_pitches) {
-        this.segments_pitches = segments_pitches;
+        this.segments_pitches = findAveragePitches(segments_pitches);
     }
 
     private double getMeanOfArray(double[] data){
@@ -156,9 +156,30 @@ public class Song implements Serializable {
             bars_start, beats_start, segments_loudness_max, (double) segments_length,
             (double) sections_length,(double) bars_length, (double) beats_length};
 
-        //double[] rt2 = RowParser.combineDoubles(segments_timbre,segments_pitches);
+        double[] rt2 = RowParser.combineDoubles(segments_timbre,segments_pitches);
 
-        return  rt;
+        return  RowParser.combineDoubles(rt, rt2);
     }
 
+    private double[] findAveragePitches(double[] data){
+        double[] rt = new double[12];
+        int size = data.length -12;
+        double sum;
+        for (int i =0; i < size; i++) {
+            sum = data[i] + data[i+12];
+            rt[1%12] += sum;
+        }
+        return rt;
+    }
+
+    private double[] findTimbreDifference(double[] data){
+        double[] rt = new double[12];
+        int size = data.length -12;
+        double diff;
+        for (int i =0; i < size; i++) {
+            diff = data[i] - data[i+12];
+            rt[1%12] += diff;
+        }
+        return rt;
+    }
 }
