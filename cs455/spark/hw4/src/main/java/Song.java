@@ -19,18 +19,19 @@ public class Song implements Serializable {
     public double tempo;
     public int time_signature;
     public int year;
-    public double sections_start;
-    public double segments_start;
+    public double[] sections_start;
+    public double[] segments_start;
     public double[] segments_timbre;
-    public double tatums_start;
-    public double bars_start;
-    public double beats_start;
-    public double segments_loudness_max;
+    public double[] tatums_start;
+    public double[] bars_start;
+    public double[] beats_start;
+    public double[] segments_loudness_max;
     public double[] segments_pitches;
     private int segments_length;
     private int sections_length;
     private int bars_length;
     private int beats_length;
+
 
     
     public String getArtist_Terms() { return artist_terms; }
@@ -63,7 +64,7 @@ public class Song implements Serializable {
     public int getYear() { return year; }
     public void setYear(int year) { this.year = year; }
 
-    public double getSegments_start() { return segments_start; }
+    public double[] getSegments_start() { return segments_start; }
 
     public void setSegments_start(double[] segments_start) {
         this.segments_start = getMeanOfArray(segments_start);
@@ -78,7 +79,7 @@ public class Song implements Serializable {
         this.segments_timbre = findTimbreDifference(segments_timbre);
     }
 
-    public double getTatums_start() {
+    public double[] getTatums_start() {
         return tatums_start;
     }
 
@@ -86,7 +87,7 @@ public class Song implements Serializable {
         this.tatums_start = getMeanOfArray(tatums_start);
     }
 
-    public double getBars_start() {
+    public double[] getBars_start() {
         return bars_start;
     }
 
@@ -95,7 +96,7 @@ public class Song implements Serializable {
         bars_length = bars_start.length;
     }
 
-    public double getBeats_start() {
+    public double[] getBeats_start() {
         return beats_start;
     }
 
@@ -104,7 +105,7 @@ public class Song implements Serializable {
         beats_length = beats_start.length;
     }
 
-    public double getSegments_loudness_max() {
+    public double[] getSegments_loudness_max() {
         return segments_loudness_max;
     }
 
@@ -120,7 +121,7 @@ public class Song implements Serializable {
         this.segments_pitches = findAveragePitches(segments_pitches);
     }
 
-    private double getMeanOfArray(double[] data){
+    private double[] getMeanOfArray(double[] data){
         double total = 0.0;
         int size = data.length -1;
         double diff = 0.0;
@@ -128,10 +129,10 @@ public class Song implements Serializable {
             diff = data[i+1] - data[i];
             total += diff;
         }
-        return (double) total/size;
+        return new double[] {(double) total/size};
     }
 
-    public double getSections_start() {
+    public double[] getSections_start() {
         return sections_start;
     }
 
@@ -143,8 +144,8 @@ public class Song implements Serializable {
     public double[] getFeatures(){
         double[] rt = {duration, end_of_fade_in, (double) key, loudness, (double) mode,
             start_of_fade_out, tempo,(double) time_signature,
-            (double) year, sections_start, segments_start, tatums_start,
-            bars_start, beats_start, segments_loudness_max, (double) segments_length,
+            (double) year, sections_start[0], segments_start[0], tatums_start[0],
+            bars_start[0], beats_start[0], segments_loudness_max[0], (double) segments_length,
             (double) sections_length,(double) bars_length, (double) beats_length};
 
         double[] rt2 = RowParser.combineDoubles(segments_timbre,segments_pitches);
