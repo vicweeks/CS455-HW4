@@ -36,8 +36,8 @@ import org.apache.spark.ml.evaluation.ClusteringEvaluator;
 import org.apache.spark.ml.Pipeline;
 import org.apache.spark.ml.PipelineModel;
 import org.apache.spark.ml.PipelineStage;
-import org.apache.spark.ml.classification.DecisionTreeClassifier;
-import org.apache.spark.ml.classification.DecisionTreeClassificationModel;
+import org.apache.spark.ml.classification.RandomForestClassifier;
+import org.apache.spark.ml.classification.RandomForestClassificationModel;
 import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator;
 import org.apache.spark.ml.feature.*;
 
@@ -109,8 +109,7 @@ public final class HW4 {
 	Dataset<Row> trainingData = splits[0];
 	Dataset<Row> testData = splits[1];
 
-	// Train a DecisionTree model.
-	DecisionTreeClassifier dt = new DecisionTreeClassifier()
+	RandomForestClassifier rf = new RandomForestClassifier()
 	    .setLabelCol("indexedLabel")
 	    .setFeaturesCol("indexedFeatures");
 
@@ -122,7 +121,7 @@ public final class HW4 {
 
 	// Chain indexers and tree in a Pipeline.
 	Pipeline pipeline = new Pipeline()
-	    .setStages(new PipelineStage[]{labelIndexer, featureIndexer, dt, labelConverter});
+	    .setStages(new PipelineStage[]{labelIndexer, featureIndexer, rf, labelConverter});
 
 	// Train model. This also runs the indexers.
 	PipelineModel model = pipeline.fit(trainingData);
@@ -147,10 +146,6 @@ public final class HW4 {
 	double accuracy = evaluator.evaluate(predictions);
 	System.out.println("Train Error = " + (1.0 - trainingAcc));
 	System.out.println("Test  Error = " + (1.0 - accuracy));
-
-	DecisionTreeClassificationModel treeModel =
-	    (DecisionTreeClassificationModel) (model.stages()[2]);
-	//System.out.println("Learned classification tree model:\n" + treeModel.toDebugString());
 	
 	/*
 	//dsLibsvm.printSchema();
