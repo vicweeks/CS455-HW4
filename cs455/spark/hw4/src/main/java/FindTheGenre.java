@@ -29,7 +29,7 @@ import org.apache.spark.sql.types.StructType;
 public class FindTheGenre  implements Serializable {
 
   private final String[] doubleArraysInData = {"bars_start", "beats_start", "segments_loudness_max",
-      "segments_pitches", "tatums_start", "segments_timbre", "segments_start"};
+      "segments_pitches", "tatums_start", "segments_timbre", "segments_start", "sections_start"};
 
   private final Dataset<Row> dataFull;
 
@@ -45,7 +45,8 @@ public class FindTheGenre  implements Serializable {
     Dataset dataFixed6 = RowParser.getSplitTerms(dataFixed7, "artist_terms", "artist_terms", DataTypes.StringType);
     Dataset dataFixed5 = dataFixed6.withColumn("artist_terms", explode(col("artist_terms")));
 
-    Dataset dataset = RowParser.processDataArray(dataFixed5, RowParser.doubleArraysInData, RowParser.maxCountForData);
+
+    Dataset dataset = RowParser.makeDoubleArrays(dataFixed5, doubleArraysInData);
 /*
     Dataset dataFixed4 = RowParser.getFirstNterms(dataFixed5, "segments_timbre", "segments_timbre", DataTypes.StringType, 1872);
     Dataset dataFixed3 = RowParser.getSplitTerms(dataFixed4, "segments_timbre", "segments_timbre", DataTypes.DoubleType);
@@ -57,7 +58,7 @@ public class FindTheGenre  implements Serializable {
     Dataset data = dataset.select("artist_terms", "danceability", "duration", "end_of_fade_in",
         "energy", "key", "loudness", "mode", "start_of_fade_out", "tempo",
         "time_signature", "year", "segments_start", "segments_timbre", "tatums_start", "bars_start",
-        "beats_start", "segments_loudness_max", "segments_pitches").as(Encoders.bean(Song.class));
+        "beats_start", "segments_loudness_max", "segments_pitches", "sections_start").as(Encoders.bean(Song.class));
 
 
     StructType libsvmSchema = new StructType().add("label", "String").add("features", new VectorUDT());
@@ -67,11 +68,8 @@ public class FindTheGenre  implements Serializable {
         data.javaRDD().map(new Function<Song, Row>() {
           public Row call(Song s) {
             String label =  s.getArtist_Terms();
-            double[] features = {s.getDanceability(), s.getDuration(), s.getEnd_Of_Fade_In(), s.getEnergy(), s.getKey(), s.getLoudness(), s.getMode(),
-                s.getStart_Of_Fade_Out(), s.getTempo(), s.getTime_Signature(), s.getYear()};
-            features = RowParser.combineDoubles(features, s.getSegments_start());
-            features = RowParser.combineDoubles(features, s.getSegments_timbre());
-            Vector currentRow = Vectors.dense(features);
+
+            Vector currentRow = Vectors.dense(s.getFeatures());
             return RowFactory.create(label, currentRow);
           }
         }), libsvmSchema);

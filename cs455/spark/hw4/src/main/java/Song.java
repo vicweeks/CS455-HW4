@@ -21,13 +21,18 @@ public class Song implements Serializable {
     public double tempo;
     public int time_signature;
     public int year;
-    public double[] segments_start;
+    public double sections_start;
+    public double segments_start;
     public double[] segments_timbre;
-    public double[] tatums_start;
-    public double[] bars_start;
-    public double[] beats_start;
-    public double[] segments_loudness_max;
+    public double tatums_start;
+    public double bars_start;
+    public double beats_start;
+    public double segments_loudness_max;
     public double[] segments_pitches;
+    private int segments_length;
+    private int sections_length;
+    private int bars_length;
+    private int beats_length;
 
     
     public String getArtist_Terms() { return artist_terms; }
@@ -66,9 +71,12 @@ public class Song implements Serializable {
     public int getYear() { return year; }
     public void setYear(int year) { this.year = year; }
 
-    public double[] getSegments_start() { return segments_start; }
+    public double getSegments_start() { return segments_start; }
 
-    public void setSegments_start(double[] segments_start) { this.segments_start = segments_start; }
+    public void setSegments_start(double[] segments_start) {
+        this.segments_start = getMeanOfArray(segments_start);
+        this.segments_length = segments_start.length;
+    }
 
     public double[] getSegments_timbre() {
         return segments_timbre;
@@ -78,36 +86,38 @@ public class Song implements Serializable {
         this.segments_timbre = segments_timbre;
     }
 
-    public double[] getTatums_start() {
+    public double getTatums_start() {
         return tatums_start;
     }
 
     public void setTatums_start(double[] tatums_start) {
-        this.tatums_start = tatums_start;
+        this.tatums_start = getMeanOfArray(tatums_start);
     }
 
-    public double[] getBars_start() {
+    public double getBars_start() {
         return bars_start;
     }
 
     public void setBars_start(double[] bars_start) {
-        this.bars_start = bars_start;
+        this.bars_start = getMeanOfArray(bars_start);
+        bars_length = bars_start.length;
     }
 
-    public double[] getBeats_start() {
+    public double getBeats_start() {
         return beats_start;
     }
 
     public void setBeats_start(double[] beats_start) {
-        this.beats_start = beats_start;
+        this.beats_start = getMeanOfArray(beats_start);
+        beats_length = beats_start.length;
     }
 
-    public double[] getSegments_loudness_max() {
+    public double getSegments_loudness_max() {
         return segments_loudness_max;
     }
 
     public void setSegments_loudness_max(double[] segments_loudness_max) {
-        this.segments_loudness_max = segments_loudness_max;
+        this.segments_loudness_max = getMeanOfArray(segments_loudness_max);
     }
 
     public double[] getSegments_pitches() {
@@ -126,7 +136,29 @@ public class Song implements Serializable {
             diff = data[i+1] - data[i];
             total += diff;
         }
-        return total/data.length;
+        return total/size;
+    }
+
+    public double getSections_start() {
+        return sections_start;
+    }
+
+    public void setSections_start(double[] sections_start) {
+        this.sections_start = getMeanOfArray(sections_start);
+        sections_length = sections_start.length;
+    }
+
+    public double[] getFeatures(){
+        double[] rt = {danceability, duration, end_of_fade_in,
+            energy, (double) key, loudness, (double) mode,
+            start_of_fade_out, tempo,(double) time_signature,
+            (double) year, sections_start, segments_start, tatums_start,
+            bars_start, beats_start, segments_loudness_max, (double) segments_length,
+            (double) sections_length,(double) bars_length, (double) beats_length};
+
+        //double[] rt2 = RowParser.combineDoubles(segments_timbre,segments_pitches);
+
+        return  rt;
     }
 
 }

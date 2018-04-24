@@ -112,7 +112,7 @@ public class RowParser {
     Dataset<Row> rt =  data;
 
     for (int i = 0; i < columns.length; i++) {
-      rt = RowParser.getSplitTerms(rt, doubleArraysInData[i], DataTypes.DoubleType);
+      rt = RowParser.getSplitTerms(rt, columns[i], DataTypes.DoubleType);
     }
     return rt;
   }
