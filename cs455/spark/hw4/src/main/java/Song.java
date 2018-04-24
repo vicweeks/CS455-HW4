@@ -169,7 +169,7 @@ public class Song implements Serializable {
             sum = data[i] + data[i+12];
             rt[1%12] += sum;
         }
-        return rt;
+        return divideArray(rt, data.length/12);
     }
 
     private double[] findTimbreDifference(double[] data){
@@ -180,6 +180,13 @@ public class Song implements Serializable {
             diff = data[i] - data[i+12];
             rt[1%12] += diff;
         }
-        return rt;
+        return divideArray(rt, data.length/12);
+    }
+
+    private double[] divideArray(double[] data, int div){
+	for(int i= 0; i < data.length; i++){
+	    data[i] = data[i]/div;
+	}
+	return data;
     }
 }

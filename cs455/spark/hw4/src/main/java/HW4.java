@@ -22,7 +22,6 @@ import static org.apache.spark.sql.functions.substring_index;
 import org.apache.spark.ml.linalg.Vector;
 import org.apache.spark.ml.linalg.Vectors;
 import org.apache.spark.ml.linalg.VectorUDT;
-import org.apache.spark.mllib.util.MLUtils;
 import org.apache.spark.api.java.JavaRDD;
 
 import java.util.Arrays;
@@ -57,7 +56,7 @@ public final class HW4 {
 	String dataLoc;
       
 	if (args.length < 1) {
-	    dataLoc = "/HW4/sample_data/";
+	    dataLoc = "/HW4/MSD_data/9*";
 	} else {
 	    dataLoc = args[0];
 	}
@@ -74,122 +73,17 @@ public final class HW4 {
 	    .option("inferSchema", "true")
 	    .option("header", "true")
 	    .load(dataLoc);
-
-
-	//FindTheGenre finalGoal = new FindTheGenre(dataFull);
-	//finalGoal.run();
-
-	/*
-	Dataset termsData = getFirstNterms(dataFull, "artist_terms",
-					   "artist_terms", DataTypes.StringType, 5);
-
-	Dataset splitTerms = getSplitTerms(dataFull, "artist_terms", DataTypes.StringType);
-
-	//splitTerms.show(5);
-	
-	FPGrowthModel model = new FPGrowth()
-	    .setItemsCol("artist_terms")
-	    .setMinSupport(0.2)
-	    .setMinConfidence(0.6)
-	    .fit(splitTerms);
-
-	// Display frequent itemsets.
-	model.freqItemsets().show();
-	model.freqItemsets().orderBy(col("freq").desc()).write().format("json").mode(SaveMode.Overwrite).save("/HW4_output/FPgrowth/freqItems");
-	// Display generated association rules.
-	model.associationRules().show();
-	model.associationRules().orderBy(col("confidence").desc()).write().mode(SaveMode.Overwrite).format("json").save("/HW4_output/FPgrowth/rules");
-	// transform examines the input items against all the association rules and summarize the
-	// consequents as prediction
-	//model.transform(splitTerms).show();
-	*/
-
 	
 	FindMostPopularGenre test1 = new FindMostPopularGenre(dataFull);
 	FindSectionsInfo test2 = new FindSectionsInfo(dataFull);
-	test2.run();
+	//test2.run();
 	//test1.run();
 
 	FindTheGenre test3 = new FindTheGenre(dataFull);
-			test3.run();
+	test3.run();
 
 
 	spark.stop();
   }
 
-	/**
-	 * Splits a string into an array and removes all chars that were part of the array setup ( " \ [ ] )
-	 * It changes the array type to the values given
-	 * @param data Dataset to read
-	 * @param columnName column to change
-	 * @param dataType the type of the array
-	 * @return The new dataset with the changed info
-	 */
-	private static Dataset<Row> getSplitTerms(Dataset<Row> data, String columnName, DataType dataType) {
-		return getSplitTerms(data, columnName, columnName, dataType);
-	}
-
-  /**
-   * Splits a string into an array and removes all chars that were part of the array setup ( " \ [ ] )
-   * and saves it to a new column
-   * It changes the array type to the values given
-   * @param data Dataset to read
-   * @param columnNameOriginal column to change
-   * @param columnNameNew the new column named
-   * @param dataType the type of the array
-   * @return The new dataset with the changed info
-   */
-  private static Dataset<Row> getSplitTerms(Dataset<Row> data, String columnNameOriginal, String columnNameNew, DataType dataType) {
-    return data.withColumn(columnNameOriginal ,split(
-        regexp_replace(data.col(columnNameNew), "[\\\\\"\\[\\]]+", ""), ", ").cast(DataTypes.createArrayType( dataType)));
-  }
-    
-  /**
-   * Gets the first element of a string[] and returns an array of just that element
-   * It need to be an array for the Machine learning models
-   * @param data Dataset to read
-   * @param columnName column to change
-   * @param dataType the type of the array
-   * @return The new dataset with the changed info
-   */
-  private static Dataset<Row> getFirstTerms(Dataset<Row> data, String columnName, DataType dataType) {
-    return getFirstTerms(data, columnName, columnName, dataType);
-  }
-
-  /**
-   * Gets the first element of a string[] and returns an array of just that element and saves it to a new column
-   * It need to be an array for the Machine learning models
-   * @param data Dataset to read
-   * @param columnNameOriginal column to change
-   * @param columnNameNew the new column named
-   * @param dataType the type of the array
-   * @return The new dataset with the changed info
-   */
-  private static Dataset<Row> getFirstTerms(Dataset<Row> data, String columnNameOriginal, String columnNameNew, DataType dataType) {
-    return data.withColumn(columnNameOriginal ,substring_index(
-        regexp_replace(data.col(columnNameNew), "[\\\\\"\\[\\]]+", ""), ", ", 1).cast( dataType));
-  }
-
-  /**
-   * Gets the first element of a string[] and returns an array of just that element and saves it to a new column
-   * It need to be an array for the Machine learning models
-   * @param data Dataset to read
-   * @param columnNameOriginal column to change
-   * @param columnNameNew the new column named
-   * @param dataType the type of the array
-   * @return The new dataset with the changed info
-   */
-  private static Dataset<Row> getFirstNterms(Dataset<Row> data, String columnNameOriginal, String columnNameNew, DataType dataType, int numberOfItems) {
-    return data.withColumn(columnNameOriginal ,substring_index(
-        regexp_replace(data.col(columnNameNew), "[\\\\\"\\[\\]]+", ""), ", ", numberOfItems).cast( dataType));
-  }
-
-  private static Dataset<Row> removeArrays(Dataset<Row> data, String columnNameOriginal, String columnNameNew, DataType dataType) {
-    return data.withColumn(columnNameOriginal , regexp_replace(data.col(columnNameNew), "[\\\\\"\\[\\]]+", "").cast( dataType));
-  }
-
-  private static double[] combineDoubles(double[] array1, double[] array2){
-
-    return ArrayUtils.addAll(array1, array2);
-  }
 }

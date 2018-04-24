@@ -7,8 +7,8 @@ import org.apache.spark.api.java.function.Function;
 import org.apache.spark.ml.Pipeline;
 import org.apache.spark.ml.PipelineModel;
 import org.apache.spark.ml.PipelineStage;
-import org.apache.spark.ml.classification.DecisionTreeClassificationModel;
-import org.apache.spark.ml.classification.DecisionTreeClassifier;
+import org.apache.spark.ml.classification.RandomForestClassificationModel;
+import org.apache.spark.ml.classification.RandomForestClassifier;
 import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator;
 import org.apache.spark.ml.feature.IndexToString;
 import org.apache.spark.ml.feature.StringIndexer;
@@ -95,7 +95,7 @@ public class FindTheGenre  implements Serializable {
     Dataset<Row> testData = splits[1];
 
     // Train a DecisionTree model.
-    DecisionTreeClassifier dt = new DecisionTreeClassifier()
+    RandomForestClassifier rf = new RandomForestClassifier()
         .setLabelCol("indexedLabel")
         .setFeaturesCol("indexedFeatures");
 
@@ -107,32 +107,39 @@ public class FindTheGenre  implements Serializable {
 
     // Chain indexers and tree in a Pipeline.
     Pipeline pipeline = new Pipeline()
-        .setStages(new PipelineStage[]{labelIndexer, featureIndexer, dt, labelConverter});
+        .setStages(new PipelineStage[]{labelIndexer, featureIndexer, rf, labelConverter});
 
     // Train model. This also runs the indexers.
     PipelineModel model = pipeline.fit(trainingData);
 
     // Make predictions.
+    Dataset<Row> trainingFit = model.transform(trainingData);
     Dataset<Row> predictions = model.transform(testData);
 
     // Select example rows to display.
+    trainingFit.select("predictedLabel", "label", "features").show(5);
     predictions.select("predictedLabel", "label", "features").show(5);
 
-    predictions.select("predictedLabel", "label").coalesce(1).write().mode(SaveMode.Overwrite).format("json").save("/home/HW4_output/test/classification");
+    //predictions.select("predictedLabel", "label").coalesce(1).write().mode(SaveMode.Overwrite).format("json").save("/home/HW4_output/test/classification");
 
     // Select (prediction, true label) and compute test error.
     MulticlassClassificationEvaluator evaluator = new MulticlassClassificationEvaluator()
         .setLabelCol("indexedLabel")
         .setPredictionCol("prediction")
         .setMetricName("accuracy");
-    double accuracy = evaluator.evaluate(predictions);
-    System.out.println("Test Error = " + (1.0 - accuracy));
 
+    double trainingAcc = evaluator.evaluate(trainingFit);
+    double accuracy = evaluator.evaluate(predictions);
+    System.out.println("Train Error = " + (1.0 - trainingAcc));
+    System.out.println("Test  Error = " + (1.0 - accuracy));
+
+    /*
     DecisionTreeClassificationModel treeModel =
         (DecisionTreeClassificationModel) (model.stages()[2]);
     System.out.println("Learned classification tree model:\n" + treeModel.toDebugString());
+    */
   }
-
+    
   private Dataset<Row> makeDoubleArrays(Dataset<Row> data){
 
     Dataset<Row> rt =  data;
