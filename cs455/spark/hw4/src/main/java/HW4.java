@@ -74,38 +74,24 @@ public final class HW4 {
 	    .option("header", "true")
 	    .load(dataLoc);
 
-	Dataset dataFiltered = dataFull.filter("year > 0 AND tempo > 0 AND time_signature > 0");
+	Dataset dataFiltered = dataFull.filter("year > 0 AND tempo > 0 AND time_signature > 0")
+	    .select("artist_terms", "duration", "end_of_fade_in",
+		    "key", "loudness", "mode", "start_of_fade_out", "tempo",
+		    "time_signature", "year", "segments_start", "segments_timbre",
+		    "tatums_start", "bars_start", "beats_start",
+		    "segments_loudness_max", "segments_pitches", "sections_start");
 	
-	double dataCount = (double) dataFiltered.count();
-	System.out.println("\nThe total number of rows in dataset is: " + dataCount);
 	
-	printFieldStats("danceability == 0", dataFiltered, dataCount);
-	printFieldStats("duration == 0", dataFiltered, dataCount);
-	printFieldStats("energy == 0", dataFiltered, dataCount);
-	printFieldStats("loudness == 0", dataFiltered, dataCount);
-	printFieldStats("tempo == 0", dataFiltered, dataCount);
-	printFieldStats("time_signature == 0", dataFiltered, dataCount);
-	printFieldStats("year == 0", dataFiltered, dataCount);
-        	
-	System.out.println("\n");
 	
-	FindMostPopularGenre test1 = new FindMostPopularGenre(dataFull);
-	FindSectionsInfo test2 = new FindSectionsInfo(dataFull);
+	//FindMostPopularGenre test1 = new FindMostPopularGenre(dataFull);
+	//FindSectionsInfo test2 = new FindSectionsInfo(dataFull);
 	//test2.run();
 	//test1.run();
 	
 	FindTheGenre classify = new FindTheGenre(dataFiltered);
-	//classify.run();
-
+	classify.run();
 
 	spark.stop();
   }
-
-    public static void printFieldStats(String fieldName, Dataset data, double dataCount) {
-	double count = (double) data.filter(fieldName).count();
-	double totalPercent = (double) (count/dataCount)*100.0;
-	System.out.format("%s: %.0f times, or %.3f percent of the time.\n",
-			  fieldName, count, totalPercent);
-    }
     
 }

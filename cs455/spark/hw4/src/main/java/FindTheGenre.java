@@ -48,6 +48,7 @@ public class FindTheGenre  implements Serializable {
 
 
     Dataset dataset = RowParser.makeDoubleArrays(dataFixed5, doubleArraysInData);
+    dataset.printSchema();
 /*
     Dataset dataFixed4 = RowParser.getFirstNterms(dataFixed5, "segments_timbre", "segments_timbre", DataTypes.StringType, 1872);
     Dataset dataFixed3 = RowParser.getSplitTerms(dataFixed4, "segments_timbre", "segments_timbre", DataTypes.DoubleType);
@@ -56,10 +57,7 @@ public class FindTheGenre  implements Serializable {
 */
 
 
-    Dataset data = dataset.select("artist_terms", "danceability", "duration", "end_of_fade_in",
-        "energy", "key", "loudness", "mode", "start_of_fade_out", "tempo",
-        "time_signature", "year", "segments_start", "segments_timbre", "tatums_start", "bars_start",
-        "beats_start", "segments_loudness_max", "segments_pitches", "sections_start").as(Encoders.bean(Song.class));
+    Dataset data = dataset.as(Encoders.bean(Song.class));
 
 
     StructType libsvmSchema = new StructType().add("label", "String").add("features", new VectorUDT());
@@ -74,8 +72,7 @@ public class FindTheGenre  implements Serializable {
             return RowFactory.create(label, currentRow);
           }
         }), libsvmSchema);
-
-
+    
     dsLibsvm.write().mode(SaveMode.Overwrite).format("json").save("/HW4_output/libsvm");
     
     Row r1 = Correlation.corr(dsLibsvm, "features").head();

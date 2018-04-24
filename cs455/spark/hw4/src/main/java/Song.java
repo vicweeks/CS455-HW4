@@ -10,10 +10,8 @@ import java.io.Serializable;
 
 public class Song implements Serializable {
     public String artist_terms;
-    public double danceability;
     public double duration;
     public double end_of_fade_in;
-    public double energy;
     public int key;
     public double loudness;
     public int mode;
@@ -38,17 +36,11 @@ public class Song implements Serializable {
     public String getArtist_Terms() { return artist_terms; }
     public void setArtist_Terms(String artist_terms) { this.artist_terms = artist_terms; }
     
-    public double getDanceability() { return danceability; }
-    public void setDanceability(double danceability) { this.danceability = danceability; }
-	
     public double getDuration() { return duration; }
     public void setDuration(double duration) { this.duration = duration; }
     
     public double getEnd_Of_Fade_In() { return end_of_fade_in; }
     public void setEnd_Of_Fade_In(double end_of_fade_in) { this.end_of_fade_in = end_of_fade_in; }
-	
-    public double getEnergy() { return energy; }
-    public void setEnergy(double energy) { this.energy = energy; }
     
     public int getKey() { return key; }
     public void setKey(int key) { this.key = key; }
@@ -149,8 +141,7 @@ public class Song implements Serializable {
     }
 
     public double[] getFeatures(){
-        double[] rt = {danceability, duration, end_of_fade_in,
-            energy, (double) key, loudness, (double) mode,
+        double[] rt = {duration, end_of_fade_in, (double) key, loudness, (double) mode,
             start_of_fade_out, tempo,(double) time_signature,
             (double) year, sections_start, segments_start, tatums_start,
             bars_start, beats_start, segments_loudness_max, (double) segments_length,
