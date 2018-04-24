@@ -7,6 +7,8 @@ import org.apache.spark.api.java.function.Function;
 import org.apache.spark.ml.Pipeline;
 import org.apache.spark.ml.PipelineModel;
 import org.apache.spark.ml.PipelineStage;
+import org.apache.spark.ml.classification.DecisionTreeClassificationModel;
+import org.apache.spark.ml.classification.DecisionTreeClassifier;
 import org.apache.spark.ml.classification.RandomForestClassificationModel;
 import org.apache.spark.ml.classification.RandomForestClassifier;
 import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator;
@@ -42,13 +44,19 @@ public class FindTheGenre  implements Serializable {
     //Machine learning
 
     Dataset dataFixed7 = RowParser
-        .getFirstNterms(dataFull, "artist_terms", "artist_terms", DataTypes.StringType, 5);
+        .getFirstNterms(dataFull, "artist_terms", "artist_terms", DataTypes.StringType, 1);
     Dataset dataFixed6 = RowParser.getSplitTerms(dataFixed7, "artist_terms", "artist_terms", DataTypes.StringType);
     Dataset dataFixed5 = dataFixed6.withColumn("artist_terms", explode(col("artist_terms")));
 
 
     Dataset dataset = RowParser.makeDoubleArrays(dataFixed5, doubleArraysInData);
-    dataset.printSchema();
+
+    Dataset filtered = dataset.filter(col("artist_terms").like("rock")
+				      .or(col("artist_terms").like("pop"))
+					  .or(col("artist_terms").like("electronic")));
+
+    System.out.println(filtered.count());
+    
 /*
     Dataset dataFixed4 = RowParser.getFirstNterms(dataFixed5, "segments_timbre", "segments_timbre", DataTypes.StringType, 1872);
     Dataset dataFixed3 = RowParser.getSplitTerms(dataFixed4, "segments_timbre", "segments_timbre", DataTypes.DoubleType);
@@ -76,7 +84,7 @@ public class FindTheGenre  implements Serializable {
     dsLibsvm.write().mode(SaveMode.Overwrite).format("json").save("/HW4_output/libsvm");
     
     Row r1 = Correlation.corr(dsLibsvm, "features").head();
-    System.out.println("Pearson correlation matrix:\n" + r1.get(0).toString());
+    //System.out.println("Pearson correlation matrix:\n" + r1.get(0).toString());
     
 	
     // Index labels, adding metadata to the label column.
@@ -99,34 +107,12 @@ public class FindTheGenre  implements Serializable {
     Dataset<Row>[] splits = dsLibsvm.randomSplit(new double[]{0.7, 0.3});
     Dataset<Row> trainingData = splits[0];
     Dataset<Row> testData = splits[1];
-
-    // Train a DecisionTree model.
-    RandomForestClassifier rf = new RandomForestClassifier()
-        .setLabelCol("indexedLabel")
-        .setFeaturesCol("features");
-
+     
     // Convert indexed labels back to original labels.
     IndexToString labelConverter = new IndexToString()
         .setInputCol("prediction")
         .setOutputCol("predictedLabel")
-        .setLabels(labelIndexer.labels());
-
-    // Chain indexers and tree in a Pipeline.
-    Pipeline pipeline = new Pipeline()
-        .setStages(new PipelineStage[]{labelIndexer, rf, labelConverter});
-
-    // Train model. This also runs the indexers.
-    PipelineModel model = pipeline.fit(trainingData);
-
-    // Make predictions.
-    Dataset<Row> trainingFit = model.transform(trainingData);
-    Dataset<Row> predictions = model.transform(testData);
-
-    // Select example rows to display.
-    trainingFit.select("predictedLabel", "label", "features").show(5);
-    predictions.select("predictedLabel", "label", "features").show(5);
-
-    //predictions.select("predictedLabel", "label").coalesce(1).write().mode(SaveMode.Overwrite).format("json").save("/home/HW4_output/test/classification");
+        .setLabels(labelIndexer.labels());   
 
     // Select (prediction, true label) and compute test error.
     MulticlassClassificationEvaluator evaluator = new MulticlassClassificationEvaluator()
@@ -134,26 +120,42 @@ public class FindTheGenre  implements Serializable {
         .setPredictionCol("prediction")
         .setMetricName("accuracy");
 
-    double trainingAcc = evaluator.evaluate(trainingFit);
-    double accuracy = evaluator.evaluate(predictions);
-    System.out.println("Train Error = " + (1.0 - trainingAcc));
-    System.out.println("Test  Error = " + (1.0 - accuracy));
-
-    /*
-    DecisionTreeClassificationModel treeModel =
-        (DecisionTreeClassificationModel) (model.stages()[2]);
-    System.out.println("Learned classification tree model:\n" + treeModel.toDebugString());
-    */
+    decisionTreeClassifier(trainingData, testData, labelIndexer, labelConverter, evaluator);
+    
   }
     
-  private Dataset<Row> makeDoubleArrays(Dataset<Row> data){
+    private void decisionTreeClassifier(Dataset trainingData, Dataset testData,
+					StringIndexerModel labelIndexer,
+					IndexToString labelConverter,
+					MulticlassClassificationEvaluator evaluator) {
+	
+	DecisionTreeClassifier dt = new DecisionTreeClassifier()
+	    .setLabelCol("indexedLabel")
+	    .setFeaturesCol("features");
 
-    Dataset<Row> rt =  data;
+	Pipeline pipeline = new Pipeline()
+	    .setStages(new PipelineStage[]{labelIndexer, dt, labelConverter});
+	
+	// Train model. This also runs the indexers.
+	PipelineModel model = pipeline.fit(trainingData);
 
-    for (int i = 0; i < doubleArraysInData.length; i++) {
-      rt = RowParser.getSplitTerms(rt, doubleArraysInData[i], DataTypes.DoubleType);
+	// Make predictions.
+	Dataset<Row> trainingFit = model.transform(trainingData);
+	Dataset<Row> predictions = model.transform(testData);
+	
+	trainingFit.select("predictedLabel", "label")
+	    .coalesce(1).write().mode(SaveMode.Overwrite).format("json")
+	    .save("/HW4/Classification/DecisionTree/train");
+
+	predictions.select("predictedLabel", "label")
+	    .coalesce(1).write().mode(SaveMode.Overwrite).format("json")
+	    .save("/HW4/Classification/DecisionTree/test");
+
+	double trainingAcc = evaluator.evaluate(trainingFit);
+	double accuracy = evaluator.evaluate(predictions);
+	System.out.println("Train Error = " + (1.0 - trainingAcc));
+	System.out.println("Test  Error = " + (1.0 - accuracy));
+
     }
-    return rt;
-  }
 
 }
