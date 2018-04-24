@@ -56,11 +56,12 @@ public class FindTheGenre  implements Serializable {
     Dataset dataFixed1 = RowParser.getSplitTerms(dataFixed2, "segments_start", "segments_start", DataTypes.DoubleType);
 */
 
-
-    Dataset data = dataset.as(Encoders.bean(Song.class));
+    Dataset filtered = dataset.filter(col("artist_terms").like("rock").or(col("artist_terms").like("rock")));
+    Dataset data = filtered.as(Encoders.bean(Song.class));
 
 
     StructType libsvmSchema = new StructType().add("label", "String").add("features", new VectorUDT());
+
 
 
     Dataset dsLibsvm = data.sparkSession().createDataFrame(
@@ -72,7 +73,9 @@ public class FindTheGenre  implements Serializable {
             return RowFactory.create(label, currentRow);
           }
         }), libsvmSchema);
-    
+
+
+
     dsLibsvm.write().mode(SaveMode.Overwrite).format("json").save("/HW4_output/libsvm");
     
     Row r1 = Correlation.corr(dsLibsvm, "features").head();
@@ -94,7 +97,7 @@ public class FindTheGenre  implements Serializable {
         .setMaxCategories(4) // features with > 4 distinct values are treated as continuous.
         .fit(dsLibsvm);
     */
-    
+
     // Split the data into training and test sets (30% held out for testing).
     Dataset<Row>[] splits = dsLibsvm.randomSplit(new double[]{0.7, 0.3});
     Dataset<Row> trainingData = splits[0];

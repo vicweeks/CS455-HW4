@@ -60,7 +60,8 @@ public final class HW4 {
 	} else {
 	    dataLoc = args[0];
 	}
-      
+
+	//FindMostPopularGenre test1 = new FindMostPopularGenre(dataFull);
 	SparkSession spark = SparkSession
 	    .builder()
 	    .appName("HW4")
@@ -74,22 +75,24 @@ public final class HW4 {
 	    .option("header", "true")
 	    .load(dataLoc);
 
+
 	Dataset dataFiltered = dataFull.filter("year > 0 AND tempo > 0 AND time_signature > 0")
 	    .select("artist_terms", "duration", "end_of_fade_in",
 		    "key", "loudness", "mode", "start_of_fade_out", "tempo",
 		    "time_signature", "year", "segments_start", "segments_timbre",
 		    "tatums_start", "bars_start", "beats_start",
 		    "segments_loudness_max", "segments_pitches", "sections_start");
+
+			FindMostPopularGenre test1 = new FindMostPopularGenre(dataFull);
+			test1.run();
 	
-	
-	
-	//FindMostPopularGenre test1 = new FindMostPopularGenre(dataFull);
+
 	//FindSectionsInfo test2 = new FindSectionsInfo(dataFull);
 	//test2.run();
-	//test1.run();
+
 	
-	FindTheGenre classify = new FindTheGenre(dataFiltered);
-	classify.run();
+	//FindTheGenre classify = new FindTheGenre(dataFiltered);
+	//classify.run();
 
 	spark.stop();
   }

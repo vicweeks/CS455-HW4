@@ -31,16 +31,16 @@ public class FindMostPopularGenre implements Serializable {
   }
 
   public void run(){
-    Dataset<Row> allTerms = dataFull.select(col(artistTerms), col("year")).filter((col("year")).gt(0));
+    Dataset<Row> allTerms = dataFull.select(col(artistTerms));
 
-    allTerms = RowParser.getSplitTerms(allTerms, artistTerms, stringType);
-    allTerms  = allTerms.withColumn(
-        artistTerms, explode(col(artistTerms)));
+    Dataset dataFixed7 = RowParser
+        .getFirstNterms(allTerms, "artist_terms", "artist_terms", DataTypes.StringType, 1);
 
-    Dataset test = allTerms.groupBy(col(artistTerms), col("year")).count();
+    Dataset test = dataFixed7.groupBy(col(artistTerms)).count();
 
-    test.coalesce(1).orderBy(col("year").desc(), col("year").desc(), col("count").desc() ).show(); //.write().mode(SaveMode.Overwrite).format("json").save("/home/HW4_output/test/counts");;
+    test.coalesce(1).orderBy(col("count").desc()).write().mode(SaveMode.Overwrite).format("json").save("/home/HW4_output/test/Totalcounts");;
     JavaRDD<String> terms2 = allTerms.map(row -> row.mkString(), Encoders.STRING()).javaRDD();
+
 
     //JavaPairRDD<String, Integer> ones = terms2.mapToPair(s -> new Tuple2<>(s, 1));
 
