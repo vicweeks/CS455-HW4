@@ -136,7 +136,7 @@ public class Song implements Serializable {
             diff = data[i+1] - data[i];
             total += diff;
         }
-        return total/size;
+        return (double) total/size;
     }
 
     public double getSections_start() {
@@ -167,7 +167,7 @@ public class Song implements Serializable {
         double sum;
         for (int i =0; i < size; i++) {
             sum = data[i] + data[i+12];
-            rt[1%12] += sum;
+            rt[i%12] += sum;
         }
         return divideArray(rt, data.length/12);
     }
@@ -178,7 +178,7 @@ public class Song implements Serializable {
         double diff;
         for (int i =0; i < size; i++) {
             diff = data[i] - data[i+12];
-            rt[1%12] += diff;
+            rt[i%12] += diff;
         }
         return divideArray(rt, data.length/12);
     }

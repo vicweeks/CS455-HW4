@@ -56,7 +56,7 @@ public final class HW4 {
 	String dataLoc;
       
 	if (args.length < 1) {
-	    dataLoc = "/HW4/MSD_data/9*";
+	    dataLoc = "/HW4/sample_data";
 	} else {
 	    dataLoc = args[0];
 	}
@@ -73,17 +73,39 @@ public final class HW4 {
 	    .option("inferSchema", "true")
 	    .option("header", "true")
 	    .load(dataLoc);
+
+	Dataset dataFiltered = dataFull.filter("year > 0 AND tempo > 0 AND time_signature > 0");
+	
+	double dataCount = (double) dataFiltered.count();
+	System.out.println("\nThe total number of rows in dataset is: " + dataCount);
+	
+	printFieldStats("danceability == 0", dataFiltered, dataCount);
+	printFieldStats("duration == 0", dataFiltered, dataCount);
+	printFieldStats("energy == 0", dataFiltered, dataCount);
+	printFieldStats("loudness == 0", dataFiltered, dataCount);
+	printFieldStats("tempo == 0", dataFiltered, dataCount);
+	printFieldStats("time_signature == 0", dataFiltered, dataCount);
+	printFieldStats("year == 0", dataFiltered, dataCount);
+        	
+	System.out.println("\n");
 	
 	FindMostPopularGenre test1 = new FindMostPopularGenre(dataFull);
 	FindSectionsInfo test2 = new FindSectionsInfo(dataFull);
 	//test2.run();
 	//test1.run();
-
-	FindTheGenre test3 = new FindTheGenre(dataFull);
-	test3.run();
+	
+	FindTheGenre classify = new FindTheGenre(dataFiltered);
+	//classify.run();
 
 
 	spark.stop();
   }
 
+    public static void printFieldStats(String fieldName, Dataset data, double dataCount) {
+	double count = (double) data.filter(fieldName).count();
+	double totalPercent = (double) (count/dataCount)*100.0;
+	System.out.format("%s: %.0f times, or %.3f percent of the time.\n",
+			  fieldName, count, totalPercent);
+    }
+    
 }

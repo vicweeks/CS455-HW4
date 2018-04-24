@@ -25,6 +25,7 @@ import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructType;
+import org.apache.spark.ml.stat.Correlation;
 
 public class FindTheGenre  implements Serializable {
 
@@ -75,6 +76,12 @@ public class FindTheGenre  implements Serializable {
         }), libsvmSchema);
 
 
+    dsLibsvm.write().mode(SaveMode.Overwrite).format("json").save("/HW4_output/libsvm");
+    
+    Row r1 = Correlation.corr(dsLibsvm, "features").head();
+    System.out.println("Pearson correlation matrix:\n" + r1.get(0).toString());
+    
+	
     // Index labels, adding metadata to the label column.
     // Fit on whole dataset to include all labels in index.
     StringIndexerModel labelIndexer = new StringIndexer()
@@ -82,13 +89,15 @@ public class FindTheGenre  implements Serializable {
         .setOutputCol("indexedLabel")
         .fit(dsLibsvm);
 
+    /*
     // Automatically identify categorical features, and index them.
     VectorIndexerModel featureIndexer = new VectorIndexer()
         .setInputCol("features")
         .setOutputCol("indexedFeatures")
         .setMaxCategories(4) // features with > 4 distinct values are treated as continuous.
         .fit(dsLibsvm);
-
+    */
+    
     // Split the data into training and test sets (30% held out for testing).
     Dataset<Row>[] splits = dsLibsvm.randomSplit(new double[]{0.7, 0.3});
     Dataset<Row> trainingData = splits[0];
@@ -97,7 +106,7 @@ public class FindTheGenre  implements Serializable {
     // Train a DecisionTree model.
     RandomForestClassifier rf = new RandomForestClassifier()
         .setLabelCol("indexedLabel")
-        .setFeaturesCol("indexedFeatures");
+        .setFeaturesCol("features");
 
     // Convert indexed labels back to original labels.
     IndexToString labelConverter = new IndexToString()
@@ -107,7 +116,7 @@ public class FindTheGenre  implements Serializable {
 
     // Chain indexers and tree in a Pipeline.
     Pipeline pipeline = new Pipeline()
-        .setStages(new PipelineStage[]{labelIndexer, featureIndexer, rf, labelConverter});
+        .setStages(new PipelineStage[]{labelIndexer, rf, labelConverter});
 
     // Train model. This also runs the indexers.
     PipelineModel model = pipeline.fit(trainingData);
