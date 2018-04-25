@@ -265,9 +265,9 @@ public class FindTheGenre implements Serializable {
     // create the trainer and set its parameters
     LogisticRegression lr = new LogisticRegression()
         .setLabelCol("indexedLabel")
-        .setMaxIter(100)
+        .setMaxIter(200)
         .setRegParam(0.3)
-        .setElasticNetParam(0.8)
+        .setElasticNetParam(0.2)
         .setFamily("multinomial");
 
     Pipeline pipeline = new Pipeline()
