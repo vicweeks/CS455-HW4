@@ -42,26 +42,20 @@ public class FindTheGenre  implements Serializable {
     //Machine learning
 
     Dataset dataFixed7 = RowParser
-        .getFirstNterms(dataFull, "artist_terms", "artist_terms", DataTypes.StringType, 5);
-    Dataset dataFixed6 = RowParser.getSplitTerms(dataFixed7, "artist_terms", "artist_terms", DataTypes.StringType);
+        .getFirstNterms(dataFull, "artist_terms", DataTypes.StringType, 5);
+    Dataset dataFixed6 = RowParser.getSplitTerms(dataFixed7, "artist_terms",  DataTypes.StringType);
     Dataset dataFixed5 = dataFixed6.withColumn("artist_terms", explode(col("artist_terms")));
 
 
     Dataset dataset = RowParser.makeDoubleArrays(dataFixed5, doubleArraysInData);
     dataset.printSchema();
-/*
-    Dataset dataFixed4 = RowParser.getFirstNterms(dataFixed5, "segments_timbre", "segments_timbre", DataTypes.StringType, 1872);
-    Dataset dataFixed3 = RowParser.getSplitTerms(dataFixed4, "segments_timbre", "segments_timbre", DataTypes.DoubleType);
-    Dataset dataFixed2 = RowParser.getFirstNterms(dataFixed3, "segments_start", "segments_start", DataTypes.StringType, 312);
-    Dataset dataFixed1 = RowParser.getSplitTerms(dataFixed2, "segments_start", "segments_start", DataTypes.DoubleType);
-*/
 
-    Dataset filtered = dataset.filter(col("artist_terms").like("rock").or(col("artist_terms").like("rock")));
-    Dataset data = filtered.as(Encoders.bean(Song.class));
+
+    System.out.println("Songs before filter: " + dataset.select(col("artist_terms")).count());
+    Dataset data = dataset.as(Encoders.bean(Song.class));
 
 
     StructType libsvmSchema = new StructType().add("label", "String").add("features", new VectorUDT());
-
 
 
     Dataset dsLibsvm = data.sparkSession().createDataFrame(
@@ -74,7 +68,9 @@ public class FindTheGenre  implements Serializable {
           }
         }), libsvmSchema);
 
-
+    dsLibsvm = dsLibsvm.filter(col("label").isNotNull());
+    dsLibsvm.select("label").show();
+    System.out.println("Songs after filter: " + dsLibsvm.select(col("label")).count());
 
     dsLibsvm.write().mode(SaveMode.Overwrite).format("json").save("/HW4_output/libsvm");
     
@@ -129,7 +125,7 @@ public class FindTheGenre  implements Serializable {
     trainingFit.select("predictedLabel", "label", "features").show(5);
     predictions.select("predictedLabel", "label", "features").show(5);
 
-    //predictions.select("predictedLabel", "label").coalesce(1).write().mode(SaveMode.Overwrite).format("json").save("/home/HW4_output/test/classification");
+    predictions.select("predictedLabel", "label").coalesce(1).write().mode(SaveMode.Overwrite).format("json").save("/home/HW4_output/test/classification");
 
     // Select (prediction, true label) and compute test error.
     MulticlassClassificationEvaluator evaluator = new MulticlassClassificationEvaluator()
@@ -147,16 +143,6 @@ public class FindTheGenre  implements Serializable {
         (DecisionTreeClassificationModel) (model.stages()[2]);
     System.out.println("Learned classification tree model:\n" + treeModel.toDebugString());
     */
-  }
-    
-  private Dataset<Row> makeDoubleArrays(Dataset<Row> data){
-
-    Dataset<Row> rt =  data;
-
-    for (int i = 0; i < doubleArraysInData.length; i++) {
-      rt = RowParser.getSplitTerms(rt, doubleArraysInData[i], DataTypes.DoubleType);
-    }
-    return rt;
   }
 
 }

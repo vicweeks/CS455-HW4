@@ -18,6 +18,10 @@ import org.apache.spark.sql.types.DataTypes;
 import scala.Tuple2;
 
 
+/**
+ * Finds the total count of the first terms for songs
+ * This data was used to group the many terms into simplified terms
+ */
 public class FindMostPopularGenre implements Serializable {
 
   private final String artistTerms = "artist_terms";
@@ -26,28 +30,27 @@ public class FindMostPopularGenre implements Serializable {
   private final Dataset<Row> dataFull;
 
 
+  /**
+   * Default constructor that takes the full data of songs
+   * @param dataFull all the song data
+   */
   public FindMostPopularGenre(Dataset<Row> dataFull) {
     this.dataFull = dataFull;
   }
 
   public void run(){
+    // Get only the artist terms
     Dataset<Row> allTerms = dataFull.select(col(artistTerms));
 
-    Dataset dataFixed7 = RowParser
-        .getFirstNterms(allTerms, "artist_terms", "artist_terms", DataTypes.StringType, 1);
+    // Get the first term if the artist terms
+    Dataset dataFixed7 = RowParser.getFirstTerms(allTerms, artistTerms, stringType);
 
+    // Count all the terms
     Dataset test = dataFixed7.groupBy(col(artistTerms)).count();
 
-    test.coalesce(1).orderBy(col("count").desc()).write().mode(SaveMode.Overwrite).format("json").save("/home/HW4_output/test/Totalcounts");;
-    JavaRDD<String> terms2 = allTerms.map(row -> row.mkString(), Encoders.STRING()).javaRDD();
-
-
-    //JavaPairRDD<String, Integer> ones = terms2.mapToPair(s -> new Tuple2<>(s, 1));
-
-    //JavaPairRDD<String, Integer> counts = ones.reduceByKey((i1, i2) -> i1 + i2);
-
-    //System.out.println(Arrays.toString(counts.coalesce(1).collect().toArray()));
-
+    // Write all the counts from the other nodes
+    test.coalesce(1).orderBy(col("count").desc()).write()
+        .mode(SaveMode.Overwrite).format("json").save("/home/HW4_output/test/Totalcounts");
 
 
   }
