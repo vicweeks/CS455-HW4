@@ -50,7 +50,7 @@ public class Song implements Serializable {
   /**
    * Sets the first term of the artist
    *
-   * @param artist_terms All the terms of artist in a coma delimited string
+   * @param artist_terms All the terms of artist in a comma delimited string
    */
   public void setArtist_Terms(String artist_terms) {
     this.artist_terms = classifyGenre(artist_terms);
