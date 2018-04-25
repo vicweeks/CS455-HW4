@@ -41,14 +41,11 @@ public class FindTheGenre  implements Serializable {
   public void run(){
     //Machine learning
 
-    Dataset dataFixed7 = RowParser
-        .getFirstNterms(dataFull, "artist_terms", DataTypes.StringType, 5);
-    Dataset dataFixed6 = RowParser.getSplitTerms(dataFixed7, "artist_terms",  DataTypes.StringType);
-    Dataset dataFixed5 = dataFixed6.withColumn("artist_terms", explode(col("artist_terms")));
+    Dataset artistFirstTerm = RowParser.getFirstTerms(dataFull, "artist_terms", DataTypes.StringType);
 
 
-    Dataset dataset = RowParser.makeDoubleArrays(dataFixed5, doubleArraysInData);
-    dataset.printSchema();
+    Dataset dataset = RowParser.makeDoubleArrays(artistFirstTerm, doubleArraysInData);
+    //dataset.printSchema();
 
 
     System.out.println("Songs before filter: " + dataset.select(col("artist_terms")).count());
@@ -125,7 +122,7 @@ public class FindTheGenre  implements Serializable {
     trainingFit.select("predictedLabel", "label", "features").show(5);
     predictions.select("predictedLabel", "label", "features").show(5);
 
-    predictions.select("predictedLabel", "label").coalesce(1).write().mode(SaveMode.Overwrite).format("json").save("/home/HW4_output/test/classification");
+    predictions.select("predictedLabel", "label").coalesce(1).write().mode(SaveMode.Overwrite).format("json").save("/home/HW4_output/test/classificationTest");
 
     // Select (prediction, true label) and compute test error.
     MulticlassClassificationEvaluator evaluator = new MulticlassClassificationEvaluator()

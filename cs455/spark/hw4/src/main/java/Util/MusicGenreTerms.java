@@ -31,7 +31,7 @@ public class MusicGenreTerms {
       put("freestyle", "Hip-Hop/Rap");
       put("hard bop", "Jazz");
       put("ragtime", "Jazz");
-      put("grindcore", "Metal");
+      //put("grindcore", "Metal");
       put("post-grunge", "Punk");
       put("hardcore punk", "Punk");
       put("oi", "Punk");
