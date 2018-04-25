@@ -69,8 +69,20 @@ public class FindTheGenre  implements Serializable {
         }), libsvmSchema);
 
     dsLibsvm = dsLibsvm.filter(col("label").isNotNull());
+<<<<<<< HEAD
     //dsLibsvm.select("label").show();
     System.out.println("Songs after filter: " + dsLibsvm.select(col("label")).count());
+=======
+
+    System.out.println("Songs after filter: " + dsLibsvm.select(col("label")).count());
+    Dataset test = dsLibsvm.groupBy(col("label")).count();
+    test.coalesce(1).orderBy(col("count").desc()).show();
+
+    dsLibsvm.write().mode(SaveMode.Overwrite).format("json").save("/HW4_output/libsvm");
+    
+    Row r1 = Correlation.corr(dsLibsvm, "features").head();
+    // System.out.println("Pearson correlation matrix:\n" + r1.get(0).toString());
+>>>>>>> 0c41f691ed3de363b05ce86a7db791ab3f11e2dd
     
 	
     // Index labels, adding metadata to the label column.
