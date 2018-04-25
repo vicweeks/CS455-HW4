@@ -16,7 +16,7 @@ public final class HW4 {
     String dataLoc;
 
     if (args.length < 1) {
-      dataLoc = "/HW4/sample_data";
+      dataLoc = "/HW4/MSD_data/9*";
     } else {
       dataLoc = args[0];
     }
