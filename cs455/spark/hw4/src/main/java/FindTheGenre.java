@@ -11,8 +11,12 @@ import org.apache.spark.api.java.function.Function;
 import org.apache.spark.ml.Pipeline;
 import org.apache.spark.ml.PipelineModel;
 import org.apache.spark.ml.PipelineStage;
+import org.apache.spark.ml.classification.DecisionTreeClassificationModel;
+import org.apache.spark.ml.classification.DecisionTreeClassifier;
 import org.apache.spark.ml.classification.RandomForestClassificationModel;
 import org.apache.spark.ml.classification.RandomForestClassifier;
+import org.apache.spark.ml.classification.LogisticRegression;
+import org.apache.spark.ml.classification.LogisticRegressionModel;
 import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator;
 import org.apache.spark.ml.feature.IndexToString;
 import org.apache.spark.ml.feature.StringIndexer;
@@ -84,10 +88,7 @@ public class FindTheGenre  implements Serializable {
     songCountsDS.coalesce(1).write().mode(SaveMode.Overwrite).format("json").save("/HW4_output/song_Counts_tested");
 
     dsLibsvm.write().mode(SaveMode.Overwrite).format("json").save("/HW4_output/libsvm");
-    
-    Row r1 = Correlation.corr(dsLibsvm, "features").head();
-    // System.out.println("Pearson correlation matrix:\n" + r1.get(0).toString());
-    
+
 	
     // Index labels, adding metadata to the label column.
     // Fit on whole dataset to include all labels in index.
@@ -96,24 +97,10 @@ public class FindTheGenre  implements Serializable {
         .setOutputCol("indexedLabel")
         .fit(dsLibsvm);
 
-    /*
-    // Automatically identify categorical features, and index them.
-    VectorIndexerModel featureIndexer = new VectorIndexer()
-        .setInputCol("features")
-        .setOutputCol("indexedFeatures")
-        .setMaxCategories(4) // features with > 4 distinct values are treated as continuous.
-        .fit(dsLibsvm);
-    */
-
     // Split the data into training and test sets (30% held out for testing).
     Dataset<Row>[] splits = dsLibsvm.randomSplit(new double[]{0.7, 0.3});
     Dataset<Row> trainingData = splits[0];
     Dataset<Row> testData = splits[1];
-
-    // Train a DecisionTree model.
-    RandomForestClassifier rf = new RandomForestClassifier()
-        .setLabelCol("indexedLabel")
-        .setFeaturesCol("features");
 
     // Convert indexed labels back to original labels.
     IndexToString labelConverter = new IndexToString()
@@ -121,39 +108,175 @@ public class FindTheGenre  implements Serializable {
         .setOutputCol("predictedLabel")
         .setLabels(labelIndexer.labels());
 
-    // Chain indexers and tree in a Pipeline.
-    Pipeline pipeline = new Pipeline()
-        .setStages(new PipelineStage[]{labelIndexer, rf, labelConverter});
-
-    // Train model. This also runs the indexers.
-    PipelineModel model = pipeline.fit(trainingData);
-
-    // Make predictions.
-    Dataset<Row> trainingFit = model.transform(trainingData);
-    Dataset<Row> predictions = model.transform(testData);
-
-    // Select example rows to display.
-    trainingFit.select("predictedLabel", "label", "features").show(5);
-    predictions.select("predictedLabel", "label", "features").show(5);
-
-    predictions.select("predictedLabel", "label").coalesce(1).write().mode(SaveMode.Overwrite).format("json").save("/home/HW4_output/test/classificationTest");
-
-    // Select (prediction, true label) and compute test error.
-    MulticlassClassificationEvaluator evaluator = new MulticlassClassificationEvaluator()
+        // Select (prediction, true label) and compute test error.
+    MulticlassClassificationEvaluator evaluatorAcc = new MulticlassClassificationEvaluator()
         .setLabelCol("indexedLabel")
         .setPredictionCol("prediction")
         .setMetricName("accuracy");
 
-    double trainingAcc = evaluator.evaluate(trainingFit);
-    double accuracy = evaluator.evaluate(predictions);
-    System.out.println("Train Error = " + (1.0 - trainingAcc));
-    System.out.println("Test  Error = " + (1.0 - accuracy));
+    MulticlassClassificationEvaluator evaluatorPrec = new MulticlassClassificationEvaluator()
+        .setLabelCol("indexedLabel")
+        .setPredictionCol("prediction")
+        .setMetricName("weightedPrecision");
 
-    /*
-    DecisionTreeClassificationModel treeModel =
-        (DecisionTreeClassificationModel) (model.stages()[2]);
-    System.out.println("Learned classification tree model:\n" + treeModel.toDebugString());
-    */
+    MulticlassClassificationEvaluator evaluatorRecall = new MulticlassClassificationEvaluator()
+        .setLabelCol("indexedLabel")
+        .setPredictionCol("prediction")
+        .setMetricName("weightedRecall");
+
+    decisionTreeClassifier(trainingData, testData, labelIndexer, labelConverter, evaluatorAcc,
+			   evaluatorPrec, evaluatorRecall);
+    randomForestClassifier(trainingData, testData, labelIndexer, labelConverter, evaluatorAcc,
+			   evaluatorPrec, evaluatorRecall);
+    logisticRegressionClassifier(trainingData, testData, labelIndexer, labelConverter, evaluatorAcc,
+				 evaluatorPrec, evaluatorRecall);
+
   }
+
+    private void decisionTreeClassifier(Dataset trainingData, Dataset testData,
+					StringIndexerModel labelIndexer,
+					IndexToString labelConverter,
+					MulticlassClassificationEvaluator evaluatorAcc,
+					MulticlassClassificationEvaluator evaluatorPrec,
+					MulticlassClassificationEvaluator evaluatorRecall) {
+
+	DecisionTreeClassifier dt = new DecisionTreeClassifier()
+	    .setLabelCol("indexedLabel")
+	    .setFeaturesCol("features");
+
+	Pipeline pipeline = new Pipeline()
+	    .setStages(new PipelineStage[]{labelIndexer, dt, labelConverter});
+
+	// Train model. This also runs the indexers.
+	PipelineModel model = pipeline.fit(trainingData);
+
+	// Make predictions.
+	Dataset<Row> trainingFit = model.transform(trainingData);
+	Dataset<Row> predictions = model.transform(testData);
+
+	trainingFit.select("predictedLabel", "label")
+	    .coalesce(1).write().mode(SaveMode.Overwrite).format("json")
+	    .save("/HW4/Classification/DecisionTree/train");
+
+	predictions.select("predictedLabel", "label")
+	    .coalesce(1).write().mode(SaveMode.Overwrite).format("json")
+	    .save("/HW4/Classification/DecisionTree/test");
+
+	double trainAcc = evaluatorAcc.evaluate(trainingFit);
+	double testAcc = evaluatorAcc.evaluate(predictions);
+	System.out.println();
+	System.out.println("Decision Tree Train Accuracy = " + trainAcc);
+	System.out.println("Decision Tree Test  Accuracy = " + testAcc);
+
+	double trainPrec = evaluatorPrec.evaluate(trainingFit);
+	double testPrec = evaluatorPrec.evaluate(predictions);
+	System.out.println("Decision Tree Train Weighted Predictions = " + trainPrec);
+	System.out.println("Decision Tree Test  Weighted Predictions= " + testPrec);
+
+	double trainRecall = evaluatorRecall.evaluate(trainingFit);
+	double testRecall = evaluatorRecall.evaluate(predictions);
+	System.out.println("Decision Tree Train Weighted Recall = " + trainRecall);
+	System.out.println("Decision Tree Test  Weighted Recall = " + testRecall);
+
+    }
+
+    private void randomForestClassifier(Dataset trainingData, Dataset testData,
+					StringIndexerModel labelIndexer,
+					IndexToString labelConverter,
+				        MulticlassClassificationEvaluator evaluatorAcc,
+					MulticlassClassificationEvaluator evaluatorPrec,
+					MulticlassClassificationEvaluator evaluatorRecall) {
+
+	RandomForestClassifier rf = new RandomForestClassifier()
+	    .setLabelCol("indexedLabel")
+	    .setFeaturesCol("features");
+
+	Pipeline pipeline = new Pipeline()
+	    .setStages(new PipelineStage[]{labelIndexer, rf, labelConverter});
+
+	// Train model. This also runs the indexers.
+	PipelineModel model = pipeline.fit(trainingData);
+
+	// Make predictions.
+	Dataset<Row> trainingFit = model.transform(trainingData);
+	Dataset<Row> predictions = model.transform(testData);
+
+	trainingFit.select("predictedLabel", "label")
+	    .coalesce(1).write().mode(SaveMode.Overwrite).format("json")
+	    .save("/HW4/Classification/RandomForest/train");
+
+	predictions.select("predictedLabel", "label")
+	    .coalesce(1).write().mode(SaveMode.Overwrite).format("json")
+	    .save("/HW4/Classification/RandomForest/test");
+
+        double trainAcc = evaluatorAcc.evaluate(trainingFit);
+	double testAcc = evaluatorAcc.evaluate(predictions);
+	System.out.println();
+	System.out.println("Random Forest Train Accuracy = " + trainAcc);
+	System.out.println("Random Forest Test  Accuracy = " + testAcc);
+
+	double trainPrec = evaluatorPrec.evaluate(trainingFit);
+	double testPrec = evaluatorPrec.evaluate(predictions);
+	System.out.println("Random Forest Train Weighted Predictions = " + trainPrec);
+	System.out.println("Random Forest Test  Weighted Predictions= " + testPrec);
+
+	double trainRecall = evaluatorRecall.evaluate(trainingFit);
+	double testRecall = evaluatorRecall.evaluate(predictions);
+	System.out.println("Random Forest Train Weighted Recall = " + trainRecall);
+	System.out.println("Random Forest Test  Weighted Recall = " + testRecall);
+
+    }
+
+    private void logisticRegressionClassifier(Dataset trainingData, Dataset testData,
+					StringIndexerModel labelIndexer,
+					IndexToString labelConverter,
+				        MulticlassClassificationEvaluator evaluatorAcc,
+					MulticlassClassificationEvaluator evaluatorPrec,
+					MulticlassClassificationEvaluator evaluatorRecall) {
+
+	// create the trainer and set its parameters
+	LogisticRegression lr = new LogisticRegression()
+	    .setLabelCol("indexedLabel")
+	    .setMaxIter(100)
+	    .setRegParam(0.3)
+	    .setElasticNetParam(0.8)
+	    .setFamily("multinomial");
+
+	Pipeline pipeline = new Pipeline()
+	    .setStages(new PipelineStage[]{labelIndexer, lr, labelConverter});
+
+	// Train model. This also runs the indexers.
+	PipelineModel model = pipeline.fit(trainingData);
+
+
+	// Make predictions.
+	Dataset<Row> trainingFit = model.transform(trainingData);
+	Dataset<Row> predictions = model.transform(testData);
+
+	trainingFit.select("predictedLabel", "label")
+	    .coalesce(1).write().mode(SaveMode.Overwrite).format("json")
+	    .save("/HW4/Classification/Regression/train");
+
+	predictions.select("predictedLabel", "label")
+	    .coalesce(1).write().mode(SaveMode.Overwrite).format("json")
+	    .save("/HW4/Classification/Regression/test");
+
+	double trainAcc = evaluatorAcc.evaluate(trainingFit);
+	double testAcc = evaluatorAcc.evaluate(predictions);
+	System.out.println();
+	System.out.println("Logistic Regression Train Accuracy = " + trainAcc);
+	System.out.println("Logistic Regression Test  Accuracy = " + testAcc);
+
+	double trainPrec = evaluatorPrec.evaluate(trainingFit);
+	double testPrec = evaluatorPrec.evaluate(predictions);
+	System.out.println("Logistic Regression Train Weighted Predictions = " + trainPrec);
+	System.out.println("Logistic Regression Test  Weighted Predictions= " + testPrec);
+
+	double trainRecall = evaluatorRecall.evaluate(trainingFit);
+	double testRecall = evaluatorRecall.evaluate(predictions);
+	System.out.println("Logistic Regression Train Weighted Recall = " + trainRecall);
+	System.out.println("Logistic Regression Test  Weighted Recall = " + testRecall);
+
+    }
 
 }
