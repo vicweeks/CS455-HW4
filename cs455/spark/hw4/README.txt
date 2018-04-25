@@ -32,7 +32,7 @@ Breakdown of classes:
 ------------------------------------
 
     - util
-       - MusicGenreTerms.java: categorizes key terms and most popular subgenres under a broader genre
+       - MusicGenreTerms.java: categorizes key terms and subgenres under a broader genre
        - RowParser.java: parses data into usable format
     - FindMostPopularGenre.java: finds total count of first key terms of song
     - FindTheGenre.java: runs genre analysis using extracted data
