@@ -17,8 +17,8 @@
     </dependency>
     <dependency> <!-- Spark ML dependency  -->
       <groupId>org.apache.spark</groupId>
-      <artifactId>spark-mllib_2.10</artifactId>
-      <version>2.2.0</version>
+      <artifactId>spark-mllib_2.11</artifactId>
+      <version>2.3.0</version>
 </dependency>
   </dependencies>
 </project>

@@ -49,7 +49,7 @@ public final class JavaWordCount {
 
     JavaPairRDD<String, Integer> counts = ones.reduceByKey((i1, i2) -> i1 + i2);
 
-    counts.coalesce(1).saveAsTextFile("/HW4/Example/WordCountOutput");
+    counts.coalesce(1).saveAsTextFile("/HW4/Example/WordCountOutputBig");
     
     spark.stop();
   }
