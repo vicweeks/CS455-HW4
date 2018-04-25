@@ -92,21 +92,36 @@ public class FindTheGenre  implements Serializable {
         .setLabels(labelIndexer.labels());
 
         // Select (prediction, true label) and compute test error.
-    MulticlassClassificationEvaluator evaluator = new MulticlassClassificationEvaluator()
+    MulticlassClassificationEvaluator evaluatorAcc = new MulticlassClassificationEvaluator()
         .setLabelCol("indexedLabel")
         .setPredictionCol("prediction")
         .setMetricName("accuracy");
 
-    decisionTreeClassifier(trainingData, testData, labelIndexer, labelConverter, evaluator);
-    randomForestClassifier(trainingData, testData, labelIndexer, labelConverter, evaluator);
-    logisticRegressionClassifier(trainingData, testData, labelIndexer, labelConverter, evaluator);
+    MulticlassClassificationEvaluator evaluatorPrec = new MulticlassClassificationEvaluator()
+        .setLabelCol("indexedLabel")
+        .setPredictionCol("prediction")
+        .setMetricName("weightedPrecision");
+
+    MulticlassClassificationEvaluator evaluatorRecall = new MulticlassClassificationEvaluator()
+        .setLabelCol("indexedLabel")
+        .setPredictionCol("prediction")
+        .setMetricName("weightedRecall");
+    
+    decisionTreeClassifier(trainingData, testData, labelIndexer, labelConverter, evaluatorAcc,
+			   evaluatorPrec, evaluatorRecall);
+    randomForestClassifier(trainingData, testData, labelIndexer, labelConverter, evaluatorAcc,
+			   evaluatorPrec, evaluatorRecall);
+    logisticRegressionClassifier(trainingData, testData, labelIndexer, labelConverter, evaluatorAcc,
+				 evaluatorPrec, evaluatorRecall);
     
   }
 
     private void decisionTreeClassifier(Dataset trainingData, Dataset testData,
 					StringIndexerModel labelIndexer,
 					IndexToString labelConverter,
-					MulticlassClassificationEvaluator evaluator) {
+					MulticlassClassificationEvaluator evaluatorAcc,
+					MulticlassClassificationEvaluator evaluatorPrec,
+					MulticlassClassificationEvaluator evaluatorRecall) {
 	
 	DecisionTreeClassifier dt = new DecisionTreeClassifier()
 	    .setLabelCol("indexedLabel")
@@ -130,18 +145,30 @@ public class FindTheGenre  implements Serializable {
 	    .coalesce(1).write().mode(SaveMode.Overwrite).format("json")
 	    .save("/HW4/Classification/DecisionTree/test");
 
-	double trainingAcc = evaluator.evaluate(trainingFit);
-	double accuracy = evaluator.evaluate(predictions);
+	double trainAcc = evaluatorAcc.evaluate(trainingFit);
+	double testAcc = evaluatorAcc.evaluate(predictions);
 	System.out.println();
-	System.out.println("Decision Tree Train Error = " + (1.0 - trainingAcc));
-	System.out.println("Decision Tree Test  Error = " + (1.0 - accuracy));
+	System.out.println("Decision Tree Train Accuracy = " + trainAcc);
+	System.out.println("Decision Tree Test  Accuracy = " + testAcc);
+
+	double trainPrec = evaluatorPrec.evaluate(trainingFit);
+	double testPrec = evaluatorPrec.evaluate(predictions);
+	System.out.println("Decision Tree Train Weighted Predictions = " + trainPrec);
+	System.out.println("Decision Tree Test  Weighted Predictions= " + testPrec);
+
+	double trainRecall = evaluatorRecall.evaluate(trainingFit);
+	double testRecall = evaluatorRecall.evaluate(predictions);
+	System.out.println("Decision Tree Train Weighted Recall = " + trainRecall);
+	System.out.println("Decision Tree Test  Weighted Recall = " + testRecall);
 
     }
 
     private void randomForestClassifier(Dataset trainingData, Dataset testData,
 					StringIndexerModel labelIndexer,
 					IndexToString labelConverter,
-					MulticlassClassificationEvaluator evaluator) {
+				        MulticlassClassificationEvaluator evaluatorAcc,
+					MulticlassClassificationEvaluator evaluatorPrec,
+					MulticlassClassificationEvaluator evaluatorRecall) {
 	
 	RandomForestClassifier rf = new RandomForestClassifier()
 	    .setLabelCol("indexedLabel")
@@ -165,18 +192,30 @@ public class FindTheGenre  implements Serializable {
 	    .coalesce(1).write().mode(SaveMode.Overwrite).format("json")
 	    .save("/HW4/Classification/RandomForest/test");
 
-	double trainingAcc = evaluator.evaluate(trainingFit);
-	double accuracy = evaluator.evaluate(predictions);
+        double trainAcc = evaluatorAcc.evaluate(trainingFit);
+	double testAcc = evaluatorAcc.evaluate(predictions);
 	System.out.println();
-	System.out.println("Random Forest Train Error = " + (1.0 - trainingAcc));
-	System.out.println("Random Forest Test  Error = " + (1.0 - accuracy));
+	System.out.println("Random Forest Train Accuracy = " + trainAcc);
+	System.out.println("Random Forest Test  Accuracy = " + testAcc);
+
+	double trainPrec = evaluatorPrec.evaluate(trainingFit);
+	double testPrec = evaluatorPrec.evaluate(predictions);
+	System.out.println("Random Forest Train Weighted Predictions = " + trainPrec);
+	System.out.println("Random Forest Test  Weighted Predictions= " + testPrec);
+
+	double trainRecall = evaluatorRecall.evaluate(trainingFit);
+	double testRecall = evaluatorRecall.evaluate(predictions);
+	System.out.println("Random Forest Train Weighted Recall = " + trainRecall);
+	System.out.println("Random Forest Test  Weighted Recall = " + testRecall);
 
     }
 
     private void logisticRegressionClassifier(Dataset trainingData, Dataset testData,
 					StringIndexerModel labelIndexer,
 					IndexToString labelConverter,
-					MulticlassClassificationEvaluator evaluator) {
+				        MulticlassClassificationEvaluator evaluatorAcc,
+					MulticlassClassificationEvaluator evaluatorPrec,
+					MulticlassClassificationEvaluator evaluatorRecall) {
 
 	// create the trainer and set its parameters
 	LogisticRegression lr = new LogisticRegression()
@@ -205,11 +244,21 @@ public class FindTheGenre  implements Serializable {
 	    .coalesce(1).write().mode(SaveMode.Overwrite).format("json")
 	    .save("/HW4/Classification/Regression/test");
 
-	double trainingAcc = evaluator.evaluate(trainingFit);
-	double accuracy = evaluator.evaluate(predictions);
+	double trainAcc = evaluatorAcc.evaluate(trainingFit);
+	double testAcc = evaluatorAcc.evaluate(predictions);
 	System.out.println();
-	System.out.println("Logistic Regression Train Error = " + (1.0 - trainingAcc));
-	System.out.println("Logistic Regression Test  Error = " + (1.0 - accuracy));
+	System.out.println("Logistic Regression Train Accuracy = " + trainAcc);
+	System.out.println("Logistic Regression Test  Accuracy = " + testAcc);
+
+	double trainPrec = evaluatorPrec.evaluate(trainingFit);
+	double testPrec = evaluatorPrec.evaluate(predictions);
+	System.out.println("Logistic Regression Train Weighted Predictions = " + trainPrec);
+	System.out.println("Logistic Regression Test  Weighted Predictions= " + testPrec);
+
+	double trainRecall = evaluatorRecall.evaluate(trainingFit);
+	double testRecall = evaluatorRecall.evaluate(predictions);
+	System.out.println("Logistic Regression Train Weighted Recall = " + trainRecall);
+	System.out.println("Logistic Regression Test  Weighted Recall = " + testRecall);
 	
     }
     
