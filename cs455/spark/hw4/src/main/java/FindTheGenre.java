@@ -58,10 +58,10 @@ public class FindTheGenre implements Serializable {
     Dataset artistFirstTerm = RowParser
         .getFirstTerms(dataFull, "artist_terms", DataTypes.StringType);
 
-    Dataset dataset = RowParser.makeDoubleArrays(artistFirstTerm, doubleArraysInData);
+    Dataset data = RowParser.makeDoubleArrays(artistFirstTerm, doubleArraysInData).as(Encoders.bean(Song.class));
     //dataset.printSchema();
 
-    Dataset data = dataset.as(Encoders.bean(Song.class));
+    //Dataset data = dataset.as(Encoders.bean(Song.class));
 
     StructType libsvmSchema = new StructType().add("label", "String")
         .add("features", new VectorUDT());
@@ -79,7 +79,7 @@ public class FindTheGenre implements Serializable {
     dsLibsvm = dsLibsvm.filter(col("label").isNotNull());
 
     // Save info on the data we are working on
-    double startCount = (double) dataset.select(col("artist_terms")).count();
+    double startCount = (double) data.select(col("artist_terms")).count();
     double endCount =(double) dsLibsvm.select(col("label")).count();
 
     System.out.println("Songs before filter: " + startCount);
@@ -88,7 +88,7 @@ public class FindTheGenre implements Serializable {
     List<Tuple2<String, Double>> songCountsInfo = Arrays
         .asList(new Tuple2("Songs before filter: ", startCount),
             new Tuple2("Songs after filter: ", endCount));
-    Dataset totalCountsOfGenres = dsLibsvm.groupBy(col("label")).count();
+    Dataset totalCountsOfGenres = dsLibsvm.select("label").groupBy(col("label")).count();
     Dataset sortedGenres = totalCountsOfGenres.coalesce(1).orderBy(col("count").desc());
 
     sortedGenres.persist();
@@ -108,8 +108,8 @@ public class FindTheGenre implements Serializable {
 
     // Split the data into training and test sets (30% held out for testing).
     Dataset<Row>[] splits = dsLibsvm.randomSplit(new double[]{0.7, 0.3});
-    Dataset<Row> trainingData = splits[0];
-    Dataset<Row> testData = splits[1];
+    Dataset<Row> trainingData = splits[0].cache();
+    Dataset<Row> testData = splits[1].cache();
 
     // Convert indexed labels back to original labels.
     IndexToString labelConverter = new IndexToString()
