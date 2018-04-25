@@ -11,6 +11,8 @@ import org.apache.spark.ml.classification.DecisionTreeClassificationModel;
 import org.apache.spark.ml.classification.DecisionTreeClassifier;
 import org.apache.spark.ml.classification.RandomForestClassificationModel;
 import org.apache.spark.ml.classification.RandomForestClassifier;
+import org.apache.spark.ml.classification.LogisticRegression;
+import org.apache.spark.ml.classification.LogisticRegressionModel;
 import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator;
 import org.apache.spark.ml.feature.IndexToString;
 import org.apache.spark.ml.feature.StringIndexer;
@@ -67,7 +69,7 @@ public class FindTheGenre  implements Serializable {
         }), libsvmSchema);
 
     dsLibsvm = dsLibsvm.filter(col("label").isNotNull());
-    dsLibsvm.select("label").show();
+    //dsLibsvm.select("label").show();
     System.out.println("Songs after filter: " + dsLibsvm.select(col("label")).count());
     
 	
@@ -97,6 +99,8 @@ public class FindTheGenre  implements Serializable {
 
     decisionTreeClassifier(trainingData, testData, labelIndexer, labelConverter, evaluator);
     randomForestClassifier(trainingData, testData, labelIndexer, labelConverter, evaluator);
+    logisticRegressionClassifier(trainingData, testData, labelIndexer, labelConverter, evaluator);
+    
   }
 
     private void decisionTreeClassifier(Dataset trainingData, Dataset testData,
@@ -128,7 +132,8 @@ public class FindTheGenre  implements Serializable {
 
 	double trainingAcc = evaluator.evaluate(trainingFit);
 	double accuracy = evaluator.evaluate(predictions);
-	System.out.println("/nDecision Tree Train Error = " + (1.0 - trainingAcc));
+	System.out.println();
+	System.out.println("Decision Tree Train Error = " + (1.0 - trainingAcc));
 	System.out.println("Decision Tree Test  Error = " + (1.0 - accuracy));
 
     }
@@ -162,10 +167,50 @@ public class FindTheGenre  implements Serializable {
 
 	double trainingAcc = evaluator.evaluate(trainingFit);
 	double accuracy = evaluator.evaluate(predictions);
-	System.out.println("/nRandom Forest Train Error = " + (1.0 - trainingAcc));
+	System.out.println();
+	System.out.println("Random Forest Train Error = " + (1.0 - trainingAcc));
 	System.out.println("Random Forest Test  Error = " + (1.0 - accuracy));
 
     }
 
+    private void logisticRegressionClassifier(Dataset trainingData, Dataset testData,
+					StringIndexerModel labelIndexer,
+					IndexToString labelConverter,
+					MulticlassClassificationEvaluator evaluator) {
+
+	// create the trainer and set its parameters
+	LogisticRegression lr = new LogisticRegression()
+	    .setLabelCol("indexedLabel")
+	    .setMaxIter(100)
+	    .setRegParam(0.3)
+	    .setElasticNetParam(0.8)
+	    .setFamily("multinomial");
+
+	Pipeline pipeline = new Pipeline()
+	    .setStages(new PipelineStage[]{labelIndexer, lr, labelConverter});
+	
+	// Train model. This also runs the indexers.
+	PipelineModel model = pipeline.fit(trainingData);
+
+	
+	// Make predictions.
+	Dataset<Row> trainingFit = model.transform(trainingData);
+	Dataset<Row> predictions = model.transform(testData);
+
+	trainingFit.select("predictedLabel", "label")
+	    .coalesce(1).write().mode(SaveMode.Overwrite).format("json")
+	    .save("/HW4/Classification/Regression/train");
+
+	predictions.select("predictedLabel", "label")
+	    .coalesce(1).write().mode(SaveMode.Overwrite).format("json")
+	    .save("/HW4/Classification/Regression/test");
+
+	double trainingAcc = evaluator.evaluate(trainingFit);
+	double accuracy = evaluator.evaluate(predictions);
+	System.out.println();
+	System.out.println("Logistic Regression Train Error = " + (1.0 - trainingAcc));
+	System.out.println("Logistic Regression Test  Error = " + (1.0 - accuracy));
+	
+    }
     
 }
