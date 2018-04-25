@@ -481,9 +481,9 @@ public class Song implements Serializable {
     } else if (term.contains("metal")) {
       return "Metal";
     } else if (term.contains("rock")) {
-      return "Metal";
+      return "Rock";
     } else if (term.contains("hip hop")) {
-      return "hip-hop/rap";
+      return "Hip-hop/rap";
     } else if (term.contains("rap")) {
       return "Hip-Hop/Rap";
     } else if (term.contains("soul")) {
