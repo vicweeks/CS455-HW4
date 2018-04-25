@@ -50,14 +50,14 @@ public class Song implements Serializable {
   /**
    * Sets the first term of the artist
    *
-   * @param artist_terms All the terms of artist in a coma delinted string
+   * @param artist_terms All the terms of artist in a coma delimited string
    */
   public void setArtist_Terms(String artist_terms) {
     this.artist_terms = classifyGenre(artist_terms);
   }
 
   /**
-   * Gets length of the song
+   * Gets the length of the song in seconds
    *
    * @return song length
    */
@@ -66,16 +66,16 @@ public class Song implements Serializable {
   }
 
   /**
-   * Sets the length of the song
+   * Sets the length of the song in seconds
    *
-   * @param duration song length
+   * @param song length
    */
   public void setDuration(double duration) {
     this.duration = duration;
   }
 
   /**
-   * Gets the start of the song fade in
+   * Gets the start time of the song fade in
    *
    * @return the fade in time
    */
@@ -84,7 +84,7 @@ public class Song implements Serializable {
   }
 
   /**
-   * Sets the start of the song fade in
+   * Sets the start time of the song fade in
    *
    * @param end_of_fade_in the fade in time
    */
@@ -111,7 +111,7 @@ public class Song implements Serializable {
   }
 
   /**
-   * Gets the over all loudness of the song
+   * Gets the overall loudness of the song
    *
    * @return the loudness of the song
    */
@@ -120,7 +120,7 @@ public class Song implements Serializable {
   }
 
   /**
-   * Sets the over all loudness of the song
+   * Sets the overall loudness of the song
    *
    * @param loudness the loudness of the song
    */
@@ -165,7 +165,7 @@ public class Song implements Serializable {
   }
 
   /**
-   * Gets the BPM of the song
+   * Gets the tempo in beats per minute (BPM) of the song
    *
    * @return the BPM
    */
@@ -231,6 +231,8 @@ public class Song implements Serializable {
   /**
    * Sets the mean difference of the time between segment starts. It also sets the total number
    * segments
+   *
+   * @param segments_start the start time of each segment
    */
   public void setSegments_start(double[] segments_start) {
     this.segments_start = getMeanOfArray(segments_start);
@@ -249,7 +251,7 @@ public class Song implements Serializable {
   /**
    * Sets the mean difference of the bars timbre per note (12)
    *
-   * @param segments_timbre A 2d array of all the timbre notes
+   * @param segments_timbre A 2D array of all the timbre notes
    */
   public void setSegments_timbre(double[] segments_timbre) {
     this.segments_timbre = findTimbreDifference(segments_timbre);
@@ -301,8 +303,10 @@ public class Song implements Serializable {
   }
 
   /**
-   * Sets the mean difference of the time between bets starts It also sets the total number of
-   * beats
+   * Sets the mean difference of the time between beat starts. It also sets the total number of
+   * beats.
+   *
+   * @param beats_start array of start time of beats
    */
   public void setBeats_start(double[] beats_start) {
     this.beats_start = getMeanOfArray(beats_start);
@@ -340,7 +344,7 @@ public class Song implements Serializable {
   /**
    * Sets the average pitch for all the segments (12)
    *
-   * @param segments_pitches A 2d array of all the segments pitches
+   * @param segments_pitches A 2D array of all the segments pitches
    */
   public void setSegments_pitches(double[] segments_pitches) {
     this.segments_pitches = findAveragePitches(segments_pitches);
@@ -359,6 +363,8 @@ public class Song implements Serializable {
   /**
    * Sets the mean difference of the time between the sections starts. It also sets the total number
    * segments
+   *
+   * @param sections_start array of start time of sections
    */
   public void setSections_start(double[] sections_start) {
     this.sections_start = getMeanOfArray(sections_start);
@@ -405,7 +411,7 @@ public class Song implements Serializable {
 
   /**
    * Finds the average of all the segments pitches
-   * @param data a 2d array of size[?][12]
+   * @param data a 2D array of size[?][12]
    * @return the mean average for all twelve pitches double[12]
    */
   private double[] findAveragePitches(double[] data) {
@@ -422,7 +428,7 @@ public class Song implements Serializable {
 
   /**
    * Finds the mean average of all the segments timbre
-   * @param data a 2d array of size[?][12]
+   * @param data a 2D array of size[?][12]
    * @return the mean average for all twelve pitches double[12]
    */
   private double[] findTimbreDifference(double[] data) {
@@ -461,7 +467,7 @@ public class Song implements Serializable {
   private String classifyGenre(String term) {
     term = term.toLowerCase(); // should not be need
 
-    // Check for the common terms
+    // Check for common keywords to classify by genre
     if (term.contains("blues")) {
       return "Blues";
     } else if (term.contains("christian")) {
@@ -483,7 +489,7 @@ public class Song implements Serializable {
     } else if (term.contains("rock")) {
       return "Rock";
     } else if (term.contains("hip hop")) {
-      return "Hip-hop/rap";
+      return "Hip-Hop/Rap";
     } else if (term.contains("rap")) {
       return "Hip-Hop/Rap";
     } else if (term.contains("soul")) {
@@ -494,7 +500,7 @@ public class Song implements Serializable {
       return "Pop";
     }
 
-    // If the code reaches here check the map of other terms
+    // If the code reaches here, check the map of other terms (popular specific subgenres)
     return termInList(term);
   }
 
@@ -504,7 +510,6 @@ public class Song implements Serializable {
    * @return the general term for the genre or null
    */
   private String termInList(String term) {
-
     return MusicGenreTerms.genre.get(term);
   }
 
