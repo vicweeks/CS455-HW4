@@ -1,6 +1,8 @@
+FindTheGenre$1.class
 HW4.class
-FindSectionsInfo.class
 FindMostPopularGenre.class
+Util/MusicGenreTerms$1.class
+Util/MusicGenreTerms.class
 Util/RowParser.class
 Song.class
-TSVtoParquet.class
+FindTheGenre.class
