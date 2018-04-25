@@ -3,6 +3,10 @@ import static org.apache.spark.sql.functions.explode;
 
 import Util.RowParser;
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.List;
+import org.apache.spark.api.java.JavaDoubleRDD;
+import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.ml.Pipeline;
 import org.apache.spark.ml.PipelineModel;
@@ -19,6 +23,7 @@ import org.apache.spark.ml.linalg.Vector;
 import org.apache.spark.ml.linalg.VectorUDT;
 import org.apache.spark.ml.linalg.Vectors;
 import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Encoder;
 import org.apache.spark.sql.Encoders;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
@@ -26,6 +31,7 @@ import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructType;
 import org.apache.spark.ml.stat.Correlation;
+import scala.Tuple2;
 
 public class FindTheGenre  implements Serializable {
 
@@ -46,9 +52,8 @@ public class FindTheGenre  implements Serializable {
 
     Dataset dataset = RowParser.makeDoubleArrays(artistFirstTerm, doubleArraysInData);
     //dataset.printSchema();
-
-
-    System.out.println("Songs before filter: " + dataset.select(col("artist_terms")).count());
+    long startCount = dataset.select(col("artist_terms")).count();
+    System.out.println("Songs before filter: " + startCount);
     Dataset data = dataset.as(Encoders.bean(Song.class));
 
 
@@ -67,9 +72,16 @@ public class FindTheGenre  implements Serializable {
 
     dsLibsvm = dsLibsvm.filter(col("label").isNotNull());
 
-    System.out.println("Songs after filter: " + dsLibsvm.select(col("label")).count());
+    long endCount = dsLibsvm.select(col("label")).count();
+    System.out.println("Songs after filter: " + endCount);
     Dataset test = dsLibsvm.groupBy(col("label")).count();
     test.coalesce(1).orderBy(col("count").desc()).show();
+
+    Encoder<Tuple2<String,Long >> encoderCounts = Encoders.tuple( Encoders.STRING(), Encoders.LONG());
+    List<Tuple2<String,Long>> songCountsInfo = Arrays.asList(new Tuple2("Songs before filter: ", startCount), new Tuple2("Songs after filter: ", endCount));
+    Dataset songCountsDS = test.sparkSession().createDataset(songCountsInfo, encoderCounts);
+
+    songCountsDS.coalesce(1).write().mode(SaveMode.Overwrite).format("json").save("/HW4_output/song_Counts_tested");
 
     dsLibsvm.write().mode(SaveMode.Overwrite).format("json").save("/HW4_output/libsvm");
     
